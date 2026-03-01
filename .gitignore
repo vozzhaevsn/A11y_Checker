@@ -1,15 +1,1 @@
-```
-# Dependencies
-node_modules/
-
-# Environment
-.env
-.env.local
-.env.*
-
-# Editors
-.vscode/
-
-# Package management
-package-lock.json
-```
+A11y_Checker/
