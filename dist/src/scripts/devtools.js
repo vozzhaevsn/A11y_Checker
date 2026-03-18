@@ -1,0 +1,1 @@
+(()=>{"use strict";chrome.devtools.panels.create("A11y Checker","assets/icons/icon16.png","src/ui/devtools-panel.html",e=>{e.onShown.addListener(e=>{})})})();

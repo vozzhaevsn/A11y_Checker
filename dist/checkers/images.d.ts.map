@@ -1,0 +1,1 @@
+{"version":3,"file":"images.d.ts","sourceRoot":"","sources":["../../src/checkers/images.ts"],"names":[],"mappings":"AAAA,OAAO,EAAkB,kBAAkB,EAAe,MAAM,UAAU,CAAC;AAG3E;;;GAGG;AACH,qBAAa,YAAY;IACvB,OAAO,CAAC,MAAM,CAAS;;IAMvB;;;OAGG;IACG,KAAK,IAAI,OAAO,CAAC,kBAAkB,EAAE,CAAC;IAkD5C;;OAEG;IACH,OAAO,CAAC,SAAS;IAkCjB;;OAEG;IACH,OAAO,CAAC,aAAa;IAwCrB;;OAEG;IACH,OAAO,CAAC,oBAAoB;CAW7B"}

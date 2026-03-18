@@ -1,0 +1,1 @@
+{"version":3,"file":"axe-engine.d.ts","sourceRoot":"","sources":["../../src/core/axe-engine.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,aAAa,EAAE,QAAQ,EAAE,MAAM,UAAU,CAAC;AAGnD;;GAEG;AACH,qBAAa,SAAS;IACpB,OAAO,CAAC,MAAM,CAAS;;IAMvB;;;;OAIG;IACG,IAAI,CAAC,QAAQ,EAAE,QAAQ,GAAG,OAAO,CAAC,aAAa,CAAC;IAsCtD;;OAEG;IACH,OAAO,CAAC,SAAS;IA2BjB;;OAEG;IACH,KAAK;CAIN"}
