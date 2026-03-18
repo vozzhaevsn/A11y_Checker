@@ -3,11 +3,13 @@
   "name": "A11y Checker Pro",
   "version": "1.0.0",
   "description": "Browser extension for automated accessibility checking based on WCAG standards",
+
   "icons": {
     "16": "assets/icons/icon16.png",
     "48": "assets/icons/icon48.png",
     "128": "assets/icons/icon128.png"
   },
+
   "action": {
     "default_popup": "src/ui/popup.html",
     "default_title": "A11y Checker Pro",
@@ -17,26 +19,32 @@
       "128": "assets/icons/icon128.png"
     }
   },
+
   "background": {
     "service_worker": "src/scripts/background.js"
   },
+
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["src/scripts/content-script.js"],
-      "world": "ISOLATED"
+      "js": ["src/scripts/content-script.js"]
     }
   ],
+
   "devtools_page": "src/scripts/devtools.html",
+
   "permissions": [
     "activeTab",
     "storage",
     "contextMenus",
-    "tabs"
+    "tabs",
+    "scripting"
   ],
+
   "host_permissions": [
     "<all_urls>"
   ],
+
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   }

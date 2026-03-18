@@ -60,6 +60,20 @@ class PopupUI {
         throw new Error('No active tab found');
       }
 
+      // Гарантированно инжектим content-script в активную вкладку
+      try {
+        const scripting = (chrome as any).scripting;
+        if (scripting?.executeScript) {
+          await scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['src/scripts/content-script.js'],
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to inject content script via chrome.scripting:', e);
+      }
+
+      // Теперь отправляем сообщение на content-script
       const response = await chrome.tabs.sendMessage(tab.id, { action: 'scan' });
 
       if (!response?.success) {
@@ -167,7 +181,10 @@ class PopupUI {
   }
 
   private openSettings(): void {
-    chrome.runtime.openOptionsPage?.();
+    // Пока options_page не реализован, просто не делаем ничего,
+    // чтобы не было ошибки "Could not create an options page"
+    // chrome.runtime.openOptionsPage?.();
+    console.log('Settings page is not implemented yet');
   }
 
   private setLoadingState(isLoading: boolean): void {
@@ -182,4 +199,3 @@ class PopupUI {
 }
 
 new PopupUI();
-
