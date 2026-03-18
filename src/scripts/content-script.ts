@@ -24,7 +24,7 @@ class ContentScript {
       includeKeyboard: true,
       includeSemantics: true,
       autoScanOnLoad: false,
-      theme: 'light'
+      theme: 'light',
     };
   }
 
@@ -35,25 +35,25 @@ class ContentScript {
       switch (request.action) {
         case 'scan':
           this.performScan()
-            .then(result => {
+            .then((result) => {
               sendResponse({ success: true, result });
             })
-            .catch(error => {
+            .catch((error) => {
               this.logger.error('Scan failed:', error);
               sendResponse({ success: false, error: error.message });
             });
           return true;
-        
+
         case 'getSettings':
           sendResponse({ success: true, settings: this.settings });
           return true;
-        
+
         case 'updateSettings':
           this.settings = { ...this.settings, ...request.settings };
           this.scanner = new Scanner(this.settings);
           sendResponse({ success: true });
           return true;
-          
+
         default:
           this.logger.warn('Unknown action:', request.action);
           sendResponse({ success: false, error: 'Unknown action' });
@@ -68,22 +68,46 @@ class ContentScript {
       return;
     }
 
-    import('axe-core').then(axeModule => {
-      (window as any).axe = axeModule.default;
-      this.logger.info('Axe-core injected successfully');
-    }).catch(error => {
-      this.logger.error('Failed to inject axe-core:', error);
-    });
+    import('axe-core')
+      .then((axeModule) => {
+        (window as any).axe = axeModule.default;
+        this.logger.info('Axe-core injected successfully');
+      })
+      .catch((error) => {
+        this.logger.error('Failed to inject axe-core:', error);
+      });
   }
 
   private async performScan(): Promise<ScanResult> {
     this.logger.info('Starting accessibility scan...');
-    
+
+    // 1. Синхронизируем настройки из background
+    try {
+      const response = await chrome.runtime.sendMessage({ action: 'getSettings' });
+      if (response?.success && response.settings) {
+        this.settings = response.settings as Settings;
+        this.scanner = new Scanner(this.settings);
+      }
+    } catch (error) {
+      this.logger.warn(
+        'Failed to load settings from background, using local defaults',
+        error,
+      );
+    }
+
+    // 2. Запускаем скан
     const url = window.location.href;
     const result = await this.scanner.scanPage(url);
-    
+
+    // 3. Сохраняем результат в chrome.storage через background
+    try {
+      await chrome.runtime.sendMessage({ action: 'saveScanResult', payload: result });
+    } catch (error) {
+      this.logger.error('Failed to persist scan result in background', error);
+    }
+
     this.logger.info(`Scan completed. Found ${result.summary.total} issues`);
-    
+
     return result;
   }
 }

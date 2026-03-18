@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A11y Checker Pro</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1 class="title">A11y Checker Pro</h1>
+      <p class="subtitle">Проверка доступности веб-интерфейсов</p>
+    </header>
+
+    <div class="actions">
+      <button id="scan-btn" class="btn btn-primary">
+        Запустить проверку
+      </button>
+      <button id="settings-btn" class="btn btn-secondary">
+        Настройки
+      </button>
+    </div>
+
+    <div id="results-container" class="results-container">
+      <p class="placeholder">Нажмите "Запустить проверку" для начала анализа</p>
+    </div>
+
+    <div id="summary-container" class="summary-container" style="display: none;">
+      <div class="summary-item">
+        <span class="summary-label">Всего проблем:</span>
+        <span id="total-count" class="summary-value">0</span>
+      </div>
+      <div class="summary-item critical">
+        <span class="summary-label">Критичные:</span>
+        <span id="critical-count" class="summary-value">0</span>
+      </div>
+      <div class="summary-item serious">
+        <span class="summary-label">Серьёзные:</span>
+        <span id="serious-count" class="summary-value">0</span>
+      </div>
+      <div class="summary-item moderate">
+        <span class="summary-label">Средние:</span>
+        <span id="moderate-count" class="summary-value">0</span>
+      </div>
+      <div class="summary-item minor">
+        <span class="summary-label">Минимальные:</span>
+        <span id="minor-count" class="summary-value">0</span>
+      </div>
+    </div>
+
+    <div id="export-actions" class="export-actions" style="display: none;">
+      <button id="export-json-btn" class="btn btn-small">Экспорт JSON</button>
+      <button id="export-html-btn" class="btn btn-small">Экспорт HTML</button>
+      <button id="export-csv-btn" class="btn btn-small">Экспорт CSV</button>
+    </div>
+
+    <footer class="footer">
+      <p>WCAG 2.1 Level AA | v1.0.0</p>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
