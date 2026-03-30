@@ -44,7 +44,16 @@ module.exports = (env, argv) => {
     ],
     optimization: {
       minimize: isProd,
-      splitChunks: false,
+      runtimeChunk: false,
+      splitChunks: {
+        cacheGroups: {
+          default: false,
+          defaultVendors: false,
+        },
+      },
+    },
+    performance: {
+      hints: false,
     },
   };
 };
