@@ -2,7 +2,13 @@ import axe from 'axe-core';
 import { AxeEngine } from '../src/core/axe-engine';
 import { Settings } from '../src/types';
 
-jest.mock('axe-core');
+jest.mock('axe-core', () => ({
+  __esModule: true,
+  default: {
+    run: jest.fn(),
+    reset: jest.fn(),
+  },
+}));
 
 const mockedAxe = axe as unknown as {
   run: jest.Mock;
@@ -10,61 +16,72 @@ const mockedAxe = axe as unknown as {
 };
 
 describe('AxeEngine', () => {
+  const baseSettings: Settings = {
+    wcagLevel: 'AA',
+    includeColorContrast: true,
+    includeImages: true,
+    includeKeyboard: true,
+    includeSemantics: true,
+    autoScanOnLoad: false,
+    theme: 'light',
+  };
+
   beforeEach(() => {
-    mockedAxe.run = jest.fn((_doc, _config, cb) =>
-      cb(null, {
-        violations: [{ id: 'color-contrast', impact: 'serious' }],
-        passes: [],
-        incomplete: [],
-      })
-    );
-    mockedAxe.reset = jest.fn();
+    mockedAxe.run.mockResolvedValue({
+      violations: [{ id: 'color-contrast', impact: 'serious', nodes: [] }],
+      passes: [],
+      incomplete: [],
+    });
+    mockedAxe.reset.mockReturnValue(undefined);
   });
 
-  it('runs axe-core with document and derived config', async () => {
-    const engine = new AxeEngine();
-    const settings: Settings = {
-      wcagLevel: 'AA',
-      includeColorContrast: true,
-      includeImages: true,
-      includeKeyboard: true,
-      includeSemantics: true,
-      autoScanOnLoad: false,
-      theme: 'light',
-    };
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
 
-    const result = await engine.scan(settings);
+  it('runs axe-core with document and WCAG AA config', async () => {
+    const engine = new AxeEngine();
+    const result = await engine.scan(baseSettings);
 
     expect(mockedAxe.run).toHaveBeenCalledTimes(1);
     const [docArg, configArg] = mockedAxe.run.mock.calls[0];
     expect(docArg).toBe(document);
     expect(configArg.runOnly.values).toContain('wcag2aa');
+    expect(configArg.runOnly.values).toContain('wcag2a');
     expect(result.violations).toHaveLength(1);
     expect(result.url).toBe(window.location.href);
   });
 
   it('uses WCAG A config when wcagLevel is A', async () => {
     const engine = new AxeEngine();
-    await engine.scan({
-      wcagLevel: 'A',
-      includeColorContrast: true,
-      includeImages: true,
-      includeKeyboard: true,
-      includeSemantics: true,
-      autoScanOnLoad: false,
-      theme: 'light',
-    });
+    await engine.scan({ ...baseSettings, wcagLevel: 'A' });
 
     const [, configArg] = mockedAxe.run.mock.calls[0];
-    expect(configArg.runOnly.values).toEqual(expect.arrayContaining(['wcag2a', 'wcag21a']));
-    expect(configArg.runOnly.values).not.toEqual(
-      expect.arrayContaining(['wcag2aa', 'wcag21aa'])
-    );
+    expect(configArg.runOnly.values).toContain('wcag2a');
+    expect(configArg.runOnly.values).toContain('wcag21a');
+    expect(configArg.runOnly.values).not.toContain('wcag2aa');
+    expect(configArg.runOnly.values).not.toContain('wcag21aa');
+  });
+
+  it('uses WCAG AAA config when wcagLevel is AAA', async () => {
+    const engine = new AxeEngine();
+    await engine.scan({ ...baseSettings, wcagLevel: 'AAA' });
+
+    const [, configArg] = mockedAxe.run.mock.calls[0];
+    expect(configArg.runOnly.values).toContain('wcag2aaa');
+    expect(configArg.runOnly.values).toContain('wcag21aaa');
   });
 
   it('resets axe-core configuration', () => {
     const engine = new AxeEngine();
     engine.reset();
     expect(mockedAxe.reset).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws when axe.run rejects', async () => {
+    mockedAxe.run.mockRejectedValue(new Error('axe error'));
+    const engine = new AxeEngine();
+
+    await expect(engine.scan(baseSettings)).rejects.toThrow('axe error');
   });
 });
