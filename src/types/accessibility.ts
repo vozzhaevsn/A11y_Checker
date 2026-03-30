@@ -1,8 +1,18 @@
-import type { ElementInfo } from './index';
+export interface Rectangle {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
 
-/**
- * Accessibility-specific types
- */
+export interface ElementInfo {
+  tagName: string;
+  id?: string;
+  className?: string;
+  attributes: Record<string, string>;
+  textContent?: string;
+  position: Rectangle;
+}
 
 export interface Settings {
   wcagLevel: 'A' | 'AA' | 'AAA';
@@ -59,9 +69,46 @@ export interface KeyboardResult {
 }
 
 export interface AxeCoreResult {
-  violations: any[];
-  passes: any[];
-  incomplete: any[];
+  violations: AxeViolation[];
+  passes: AxeViolation[];
+  incomplete: AxeViolation[];
   timestamp: string;
   url: string;
+}
+
+export interface AxeViolation {
+  id: string;
+  description: string;
+  help: string;
+  helpUrl: string;
+  impact: string;
+  tags: string[];
+  nodes: AxeNode[];
+}
+
+export interface AxeNode {
+  target: string[];
+  all: Record<string, unknown>;
+  failureSummary?: string;
+}
+
+export interface ScanResult {
+  id: string;
+  url: string;
+  timestamp: number;
+  summary: {
+    total: number;
+    critical: number;
+    serious: number;
+    moderate: number;
+    minor: number;
+  };
+  issues: AccessibilityIssue[];
+  wcagLevel: 'A' | 'AA' | 'AAA';
+}
+
+export interface StorageData {
+  scanResults: ScanResult[];
+  settings: Settings;
+  currentTabId: number | null;
 }

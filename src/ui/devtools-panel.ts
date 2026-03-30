@@ -46,7 +46,7 @@ class DevToolsPanelUI {
       this.scanResult = response.result as ScanResult;
       this.renderResults(this.scanResult);
       this.updateStatusBar(
-        `Scan completed: ${this.scanResult.summary.total} issues (critical: ${this.scanResult.summary.critical})`
+        `Found ${this.scanResult.summary.total} issues (${this.scanResult.summary.critical} critical)`,
       );
     } catch (error) {
       console.error(error);
@@ -58,20 +58,18 @@ class DevToolsPanelUI {
     this.resultsContainer.innerHTML = '';
 
     if (result.issues.length === 0) {
-      this.resultsContainer.innerHTML = '<p>No issues found on this page.</p>';
+      this.resultsContainer.innerHTML = '<p>No issues found.</p>';
       return;
     }
 
     result.issues.forEach((issue) => {
       const item = document.createElement('div');
-      item.className = `result-item ${issue.impact}`;
+      item.className = `result-item`;
 
       item.innerHTML = `
         <div class="result-header">
           <span class="${issue.impact}">${issue.impact.toUpperCase()}</span>
-          <span class="element-tag">${issue.element.tagName}${
-            issue.element.id ? `#${issue.element.id}` : ''
-          }</span>
+          <span class="element-tag">${issue.element.tagName}${issue.element.id ? `#${issue.element.id}` : ''}</span>
         </div>
         <div class="description">${issue.description}</div>
         <div class="wcag">WCAG: ${issue.wcagCriteria.join(', ')}</div>
@@ -83,7 +81,7 @@ class DevToolsPanelUI {
 
   private exportResults(): void {
     if (!this.scanResult) {
-      this.updateStatusBar('Nothing to export. Run a scan first.');
+      this.updateStatusBar('Run a scan first.');
       return;
     }
 
@@ -93,17 +91,16 @@ class DevToolsPanelUI {
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = `a11y-results-${new Date(this.scanResult.timestamp).toISOString().slice(0, 10)}.json`;
+    a.download = `a11y-devtools-${new Date(this.scanResult.timestamp).toISOString().slice(0, 10)}.json`;
     a.click();
-
     URL.revokeObjectURL(url);
-    this.updateStatusBar('Results exported as JSON');
+
+    this.updateStatusBar('Exported as JSON');
   }
 
   private clearResults(): void {
     this.scanResult = null;
-    this.resultsContainer.innerHTML =
-      '<p>No scan results yet. Click "Run Accessibility Scan".</p>';
+    this.resultsContainer.innerHTML = '<p>No scan results yet.</p>';
     this.updateStatusBar('Results cleared');
   }
 

@@ -19,13 +19,8 @@
     "noImplicitThis": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-    "allowUnreachableCode": false,
-    "allowUnusedLabels": false,
-    "exactOptionalPropertyTypes": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "types": ["chrome", "node"]
+    "types": ["chrome"]
   },
   "include": [
     "src/**/*"

@@ -10,54 +10,96 @@
   <div class="container">
     <header class="header">
       <h1 class="title">A11y Checker Pro</h1>
-      <p class="subtitle">Проверка доступности веб-интерфейсов</p>
+      <p class="subtitle">WCAG accessibility checker for web pages</p>
     </header>
 
     <div class="actions">
-      <button id="scan-btn" class="btn btn-primary">
-        Запустить проверку
-      </button>
-      <button id="settings-btn" class="btn btn-secondary">
-        Настройки
-      </button>
+      <button id="scan-btn" class="btn btn-primary">Scan Page</button>
+      <button id="clear-btn" class="btn btn-secondary">Clear</button>
+      <button id="settings-btn" class="btn btn-secondary">Settings</button>
     </div>
 
-    <div id="results-container" class="results-container">
-      <p class="placeholder">Нажмите "Запустить проверку" для начала анализа</p>
+    <div class="wcag-selector">
+      <label for="wcag-level">WCAG Level:</label>
+      <select id="wcag-level">
+        <option value="A">A</option>
+        <option value="AA" selected>AA</option>
+        <option value="AAA">AAA</option>
+      </select>
+      <div class="filter-bar">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="critical">Critical</button>
+        <button class="filter-btn" data-filter="serious">Serious</button>
+        <button class="filter-btn" data-filter="moderate">Moderate</button>
+        <button class="filter-btn" data-filter="minor">Minor</button>
+      </div>
     </div>
 
     <div id="summary-container" class="summary-container" style="display: none;">
       <div class="summary-item">
-        <span class="summary-label">Всего проблем:</span>
+        <span class="summary-label">Total</span>
         <span id="total-count" class="summary-value">0</span>
       </div>
       <div class="summary-item critical">
-        <span class="summary-label">Критичные:</span>
+        <span class="summary-label">Critical</span>
         <span id="critical-count" class="summary-value">0</span>
       </div>
       <div class="summary-item serious">
-        <span class="summary-label">Серьёзные:</span>
+        <span class="summary-label">Serious</span>
         <span id="serious-count" class="summary-value">0</span>
       </div>
       <div class="summary-item moderate">
-        <span class="summary-label">Средние:</span>
+        <span class="summary-label">Moderate</span>
         <span id="moderate-count" class="summary-value">0</span>
       </div>
       <div class="summary-item minor">
-        <span class="summary-label">Минимальные:</span>
+        <span class="summary-label">Minor</span>
         <span id="minor-count" class="summary-value">0</span>
       </div>
     </div>
 
+    <div id="results-container" class="results-container">
+      <p class="placeholder">Click "Scan Page" to start accessibility analysis</p>
+    </div>
+
     <div id="export-actions" class="export-actions" style="display: none;">
-      <button id="export-json-btn" class="btn btn-small">Экспорт JSON</button>
-      <button id="export-html-btn" class="btn btn-small">Экспорт HTML</button>
-      <button id="export-csv-btn" class="btn btn-small">Экспорт CSV</button>
+      <button id="export-json-btn" class="btn btn-small">Export JSON</button>
+      <button id="export-html-btn" class="btn btn-small">Export HTML</button>
+      <button id="export-csv-btn" class="btn btn-small">Export CSV</button>
     </div>
 
     <footer class="footer">
-      <p>WCAG 2.1 Level AA | v1.0.0</p>
+      <span id="footer-wcag-label">WCAG 2.1 Level AA</span> &middot; v1.0.0
     </footer>
+  </div>
+
+  <!-- Settings modal -->
+  <div id="settings-overlay" class="modal-overlay">
+    <div class="modal">
+      <h2>Settings</h2>
+
+      <div class="modal-field">
+        <label for="setting-contrast">Check color contrast</label>
+        <input type="checkbox" id="setting-contrast" checked>
+      </div>
+      <div class="modal-field">
+        <label for="setting-images">Check image alt texts</label>
+        <input type="checkbox" id="setting-images" checked>
+      </div>
+      <div class="modal-field">
+        <label for="setting-semantics">Check semantic structure</label>
+        <input type="checkbox" id="setting-semantics" checked>
+      </div>
+      <div class="modal-field">
+        <label for="setting-keyboard">Check keyboard accessibility</label>
+        <input type="checkbox" id="setting-keyboard" checked>
+      </div>
+
+      <div class="modal-actions">
+        <button id="settings-cancel" class="btn btn-secondary">Cancel</button>
+        <button id="settings-save" class="btn btn-primary">Save</button>
+      </div>
+    </div>
   </div>
 
   <script src="popup.js"></script>

@@ -1,5 +1,7 @@
 import {
   AxeCoreResult,
+  AxeViolation,
+  AxeNode,
   ScanResult,
   AccessibilityIssue,
   Settings,
@@ -13,10 +15,6 @@ import { SemanticChecker } from '../checkers/semantic';
 import { KeyboardChecker } from '../checkers/keyboard';
 import { Logger } from '../utils/logger';
 
-/**
- * Main accessibility scanner class
- * Orchestrates scanning process using multiple checkers
- */
 export class Scanner {
   private axeEngine: AxeEngine;
   private contrastChecker: ContrastChecker;
@@ -34,19 +32,12 @@ export class Scanner {
     this.logger = new Logger('Scanner');
   }
 
-  /**
-   * Performs comprehensive accessibility scan of the current page
-   * @param url The URL of the page being scanned
-   * @returns Promise resolving to ScanResult
-   */
   async scanPage(url: string): Promise<ScanResult> {
     try {
       this.logger.info(`Starting accessibility scan for ${url}`);
 
-      // Run axe-core scan with settings
       const axeResults = await this.axeEngine.scan(this.settings);
 
-      // Run custom checkers based on settings
       let issues: AccessibilityIssue[] = [];
 
       if (this.settings.includeColorContrast) {
@@ -69,13 +60,9 @@ export class Scanner {
         issues = [...issues, ...keyboardIssues];
       }
 
-      // Combine axe results with custom checks
       const combinedIssues = [...issues, ...this.mapAxeResults(axeResults)];
-
-      // Calculate summary statistics
       const summary = this.calculateSummary(combinedIssues);
 
-      // Create scan result
       const result: ScanResult = {
         id: this.generateId(),
         url,
@@ -93,15 +80,11 @@ export class Scanner {
     }
   }
 
-  /**
-   * Maps axe-core results to our internal AccessibilityIssue format
-   */
   private mapAxeResults(axeResults: AxeCoreResult): AccessibilityIssue[] {
     const issues: AccessibilityIssue[] = [];
 
-    // Process violations
-    axeResults.violations.forEach((violation) => {
-      violation.nodes.forEach((node: any) => {
+    axeResults.violations.forEach((violation: AxeViolation) => {
+      violation.nodes.forEach((node: AxeNode) => {
         const issue: AccessibilityIssue = {
           id: violation.id,
           element: this.mapElement(node),
@@ -122,95 +105,53 @@ export class Scanner {
     return issues;
   }
 
-  /**
-   * Maps axe-core node to our ElementInfo format
-   */
-  private mapElement(node: any): ElementInfo {
-    const targetSelector = Array.isArray(node.target) ? node.target[0] : node.target;
+  private mapElement(node: AxeNode): ElementInfo {
+    const targetSelector = Array.isArray(node.target) ? node.target[0] : undefined;
 
-    const rect = targetSelector
+    const rect: Rectangle = targetSelector
       ? this.getElementRect(targetSelector)
-      : {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-        };
+      : { top: 0, right: 0, bottom: 0, left: 0 };
 
     return {
       tagName: targetSelector ? this.getTagName(targetSelector) : 'unknown',
       id: targetSelector ? this.getElementId(targetSelector) : undefined,
       className: targetSelector ? this.getClassName(targetSelector) : undefined,
-      attributes: node.all || {},
+      attributes: {},
       textContent: targetSelector ? this.getElementText(targetSelector) : undefined,
       position: rect,
     };
   }
 
-  /**
-   * Gets tag name from target selector
-   */
   private getTagName(target: string): string {
-    if (typeof target === 'string') {
-      const match = target.match(/^[^#\.\\[\:\s]+/);
-      return match ? match[0] : 'unknown';
-    }
-    return 'unknown';
+    const match = target.match(/^[^#.[:\s]+/);
+    return match ? match[0] : 'unknown';
   }
 
-  /**
-   * Gets element ID from target selector
-   */
   private getElementId(target: string): string | undefined {
-    if (typeof target === 'string') {
-      const match = target.match(/#([^\.\\[\:\s]+)/);
-      return match ? match[1] : undefined;
-    }
-    return undefined;
+    const match = target.match(/#([^.[:\s]+)/);
+    return match ? match[1] : undefined;
   }
 
-  /**
-   * Gets element class from target selector
-   */
   private getClassName(target: string): string | undefined {
-    if (typeof target === 'string') {
-      const matches = target.match(/\.[^\.\\[\:\s]+/g);
-      return matches ? matches.map((cls) => cls.substring(1)).join(' ') : undefined;
-    }
-    return undefined;
+    const matches = target.match(/\.[^.[:\s]+/g);
+    return matches ? matches.map((cls) => cls.substring(1)).join(' ') : undefined;
   }
 
-  /**
-   * Gets element text content
-   */
   private getElementText(target: string): string | undefined {
     try {
       const element = document.querySelector(target);
-      if (!element) {
-        return undefined;
-      }
+      if (!element) return undefined;
       const text = element.textContent?.trim() ?? '';
       return text || undefined;
-    } catch (error) {
-      this.logger.warn('Failed to get element text for selector', target, error);
+    } catch {
       return undefined;
     }
   }
 
-  /**
-   * Gets element rectangle (position/size)
-   */
   private getElementRect(target: string): Rectangle {
     try {
       const element = document.querySelector(target) as HTMLElement | null;
-      if (!element) {
-        return {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-        };
-      }
+      if (!element) return { top: 0, right: 0, bottom: 0, left: 0 };
 
       const rect = element.getBoundingClientRect();
       const top = rect.top + window.scrollY;
@@ -222,20 +163,11 @@ export class Scanner {
         bottom: top + rect.height,
         left,
       };
-    } catch (error) {
-      this.logger.warn('Failed to get element rect for selector', target, error);
-      return {
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0,
-      };
+    } catch {
+      return { top: 0, right: 0, bottom: 0, left: 0 };
     }
   }
 
-  /**
-   * Maps axe-core impact level to our internal impact levels
-   */
   private mapImpactLevel(axeImpact: string): 'critical' | 'serious' | 'moderate' | 'minor' {
     switch (axeImpact) {
       case 'critical':
@@ -244,16 +176,11 @@ export class Scanner {
         return 'serious';
       case 'moderate':
         return 'moderate';
-      case 'minor':
-        return 'minor';
       default:
         return 'minor';
     }
   }
 
-  /**
-   * Extracts WCAG levels from tags
-   */
   private extractWcagLevels(tags: string[]): ('A' | 'AA' | 'AAA')[] {
     const levels: ('A' | 'AA' | 'AAA')[] = [];
 
@@ -261,9 +188,9 @@ export class Scanner {
       if (tag.includes('wcag')) {
         if (tag.includes('aaa')) {
           levels.push('AAA');
-        } else if (tag.includes('aa')) {
+        } else if (tag.includes('aa') && !tag.includes('aaa')) {
           levels.push('AA');
-        } else if (tag.includes('a')) {
+        } else if (/wcag\d+a$/.test(tag) || /wcag2a/.test(tag)) {
           levels.push('A');
         }
       }
@@ -272,49 +199,21 @@ export class Scanner {
     return levels.length > 0 ? levels : ['A'];
   }
 
-  /**
-   * Extracts WCAG criteria from tags
-   */
   private extractWcagCriteria(tags: string[]): string[] {
-    return tags.filter((tag) => tag.startsWith('wcag') && !tag.includes('level'));
+    return tags.filter((tag) => /^wcag\d{3,}$/.test(tag));
   }
 
-  /**
-   * Calculates summary statistics from issues
-   */
   private calculateSummary(issues: AccessibilityIssue[]): ScanResult['summary'] {
-    const summary = {
-      total: issues.length,
-      critical: 0,
-      serious: 0,
-      moderate: 0,
-      minor: 0,
-    };
+    const summary = { total: issues.length, critical: 0, serious: 0, moderate: 0, minor: 0 };
 
     issues.forEach((issue) => {
-      switch (issue.impact) {
-        case 'critical':
-          summary.critical++;
-          break;
-        case 'serious':
-          summary.serious++;
-          break;
-        case 'moderate':
-          summary.moderate++;
-          break;
-        case 'minor':
-          summary.minor++;
-          break;
-      }
+      summary[issue.impact]++;
     });
 
     return summary;
   }
 
-  /**
-   * Generates unique ID for scan result
-   */
   private generateId(): string {
-    return `scan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `scan_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }
