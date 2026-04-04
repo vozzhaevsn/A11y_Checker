@@ -1,5 +1,11 @@
 import { ContrastRatioResult, AccessibilityIssue, ElementInfo } from '../types';
 import { Logger } from '../utils/logger';
+import type { AppLocale } from '../i18n/locale';
+import {
+  contrastFixSuggestions,
+  contrastHelp,
+  contrastInsufficientDescription,
+} from '../i18n/checker-messages';
 
 export class ContrastChecker {
   private logger: Logger;
@@ -8,7 +14,7 @@ export class ContrastChecker {
     this.logger = new Logger('ContrastChecker');
   }
 
-  async check(): Promise<AccessibilityIssue[]> {
+  async check(locale: AppLocale = 'en'): Promise<AccessibilityIssue[]> {
     try {
       this.logger.info('Starting color contrast check');
 
@@ -22,17 +28,23 @@ export class ContrastChecker {
           issues.push({
             id: `contrast-${element.tagName}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
             element,
-            description: `Insufficient color contrast ratio (${result.ratio.toFixed(2)}:1) for WCAG ${this.getRequiredLevel(result.requiredRatio)} level`,
-            help: `Element has contrast ratio ${result.ratio.toFixed(2)}:1, required ${result.requiredRatio}:1`,
+            description: contrastInsufficientDescription(
+              locale,
+              result.ratio,
+              this.getRequiredLevel(result.requiredRatio),
+            ),
+            help: contrastHelp(locale, result.ratio, result.requiredRatio),
             helpUrl: 'https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html',
             impact: this.determineImpactLevel(result.ratio, result.requiredRatio),
             tags: ['cat.color', 'wcag2aa', 'wcag143'],
             wcagLevels: ['AA'],
             wcagCriteria: ['1.4.3'],
-            fixSuggestions: [
-              `Increase contrast between text color (${result.foregroundColor}) and background color (${result.backgroundColor})`,
-              `Minimum ratio required: ${result.requiredRatio}:1`,
-            ],
+            fixSuggestions: contrastFixSuggestions(
+              locale,
+              result.foregroundColor,
+              result.backgroundColor,
+              result.requiredRatio,
+            ),
           });
         }
       }

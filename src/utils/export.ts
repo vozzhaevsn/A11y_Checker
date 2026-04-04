@@ -1,5 +1,7 @@
 import { ScanResult } from '../types';
 import { Logger } from './logger';
+import type { AppLocale } from '../i18n/locale';
+import { getCsvStrings, getExportReportStrings, getImpactLabel, type ImpactKey } from '../i18n/messages';
 
 export class ExportUtil {
   private logger: Logger;
@@ -13,8 +15,9 @@ export class ExportUtil {
     return JSON.stringify(result, null, 2);
   }
 
-  exportAsHtml(result: ScanResult): string {
+  exportAsHtml(result: ScanResult, locale: AppLocale = 'en'): string {
     this.logger.info('Exporting as HTML');
+    const t = getExportReportStrings(locale);
 
     const issueRows = result.issues
       .map(
@@ -22,13 +25,13 @@ export class ExportUtil {
       <div class="issue ${issue.impact}">
         <div class="issue-header">
           <span class="issue-title">${this.esc(issue.description)}</span>
-          <span class="badge ${issue.impact}">${issue.impact.toUpperCase()}</span>
+          <span class="badge ${issue.impact}">${this.esc(getImpactLabel(locale, issue.impact as ImpactKey))}</span>
         </div>
         <p class="help">${this.esc(issue.help)}</p>
         <code class="element">&lt;${this.esc(issue.element.tagName)}${
           issue.element.id ? ` id="${this.esc(issue.element.id)}"` : ''
         }${issue.element.className ? ` class="${this.esc(issue.element.className)}"` : ''}&gt;</code>
-        <p class="wcag">WCAG: ${issue.wcagCriteria.join(', ')}</p>
+        <p class="wcag">${this.esc(t.wcagLinePrefix)} ${issue.wcagCriteria.join(', ')}</p>
         ${
           issue.fixSuggestions.length
             ? `<ul class="fixes">${issue.fixSuggestions.map((s: string) => `<li>${this.esc(s)}</li>`).join('')}</ul>`
@@ -39,11 +42,11 @@ export class ExportUtil {
       .join('\n');
 
     return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${t.htmlLang}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>A11y Checker Report — ${this.esc(result.url)}</title>
+<title>${this.esc(t.reportTitle(result.url))}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
@@ -71,19 +74,19 @@ code.element{display:block;background:#f9f9f9;padding:6px 8px;border-radius:4px;
 </style>
 </head>
 <body>
-<h1>A11y Checker Report</h1>
+<h1>${this.esc(t.pageTitle)}</h1>
 <div class="meta">
-  <p><b>URL:</b> ${this.esc(result.url)}</p>
-  <p><b>Date:</b> ${new Date(result.timestamp).toLocaleString()}</p>
-  <p><b>WCAG Level:</b> ${result.wcagLevel}</p>
+  <p><b>${this.esc(t.metaUrl)}</b> ${this.esc(result.url)}</p>
+  <p><b>${this.esc(t.metaDate)}</b> ${new Date(result.timestamp).toLocaleString(locale === 'ru' ? 'ru-RU' : 'en-US')}</p>
+  <p><b>${this.esc(t.metaWcagLevel)}</b> ${result.wcagLevel}</p>
 </div>
 
 <div class="summary">
-  <div class="summary-card"><div class="label">Total</div><div class="value">${result.summary.total}</div></div>
-  <div class="summary-card critical"><div class="label">Critical</div><div class="value">${result.summary.critical}</div></div>
-  <div class="summary-card serious"><div class="label">Serious</div><div class="value">${result.summary.serious}</div></div>
-  <div class="summary-card moderate"><div class="label">Moderate</div><div class="value">${result.summary.moderate}</div></div>
-  <div class="summary-card minor"><div class="label">Minor</div><div class="value">${result.summary.minor}</div></div>
+  <div class="summary-card"><div class="label">${this.esc(t.summaryTotal)}</div><div class="value">${result.summary.total}</div></div>
+  <div class="summary-card critical"><div class="label">${this.esc(t.summaryCritical)}</div><div class="value">${result.summary.critical}</div></div>
+  <div class="summary-card serious"><div class="label">${this.esc(t.summarySerious)}</div><div class="value">${result.summary.serious}</div></div>
+  <div class="summary-card moderate"><div class="label">${this.esc(t.summaryModerate)}</div><div class="value">${result.summary.moderate}</div></div>
+  <div class="summary-card minor"><div class="label">${this.esc(t.summaryMinor)}</div><div class="value">${result.summary.minor}</div></div>
 </div>
 
 <div class="issues">
@@ -93,15 +96,15 @@ ${issueRows}
 </html>`;
   }
 
-  exportAsCsv(result: ScanResult): string {
+  exportAsCsv(result: ScanResult, locale: AppLocale = 'en'): string {
     this.logger.info('Exporting as CSV');
+    const { headers } = getCsvStrings(locale);
 
-    const headers = ['ID', 'Element', 'Description', 'Impact', 'WCAG Criteria', 'Help', 'Fix Suggestions'];
     const rows = result.issues.map((issue) => [
       issue.id,
       `<${issue.element.tagName}${issue.element.id ? ` id="${issue.element.id}"` : ''}>`,
       issue.description,
-      issue.impact,
+      getImpactLabel(locale, issue.impact as ImpactKey),
       issue.wcagCriteria.join('; '),
       issue.help,
       issue.fixSuggestions.join('; '),

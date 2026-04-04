@@ -10,7 +10,7 @@
   <div class="container">
     <header class="header">
       <h1 class="title">A11y Checker Pro</h1>
-      <p class="subtitle">WCAG accessibility checker for web pages</p>
+      <p id="app-subtitle" class="subtitle">WCAG accessibility checker for web pages</p>
     </header>
 
     <div class="actions">
@@ -76,7 +76,15 @@
   <!-- Settings modal -->
   <div id="settings-overlay" class="modal-overlay">
     <div class="modal">
-      <h2>Settings</h2>
+      <h2 id="settings-title">Settings</h2>
+
+      <div class="modal-field">
+        <label for="setting-locale" id="setting-locale-label">Interface language</label>
+        <select id="setting-locale">
+          <option value="en">English</option>
+          <option value="ru">Русский</option>
+        </select>
+      </div>
 
       <div class="modal-field">
         <label for="setting-contrast">Check color contrast</label>

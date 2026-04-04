@@ -1,5 +1,26 @@
 import { AccessibilityIssue, ElementInfo } from '../types';
 import { Logger } from '../utils/logger';
+import type { AppLocale } from '../i18n/locale';
+import {
+  formLabelDescription,
+  formLabelFix,
+  formLabelHelp,
+  headingSkipDescription,
+  headingSkipFix,
+  headingSkipHelp,
+  missingH1Description,
+  missingH1Fix,
+  missingH1Help,
+  missingLandmarkDescription,
+  missingLandmarkFix,
+  missingLandmarkHelp,
+  missingTitleDescription,
+  missingTitleFix,
+  missingTitleHelp,
+  multipleH1Description,
+  multipleH1Fix,
+  multipleH1Help,
+} from '../i18n/checker-messages';
 
 export class SemanticChecker {
   private logger: Logger;
@@ -8,16 +29,16 @@ export class SemanticChecker {
     this.logger = new Logger('SemanticChecker');
   }
 
-  async check(): Promise<AccessibilityIssue[]> {
+  async check(locale: AppLocale = 'en'): Promise<AccessibilityIssue[]> {
     try {
       this.logger.info('Starting semantic structure check');
 
       const issues: AccessibilityIssue[] = [];
 
-      issues.push(...this.checkPageTitle());
-      issues.push(...this.checkHeadings());
-      issues.push(...this.checkLandmarks());
-      issues.push(...this.checkFormLabels());
+      issues.push(...this.checkPageTitle(locale));
+      issues.push(...this.checkHeadings(locale));
+      issues.push(...this.checkLandmarks(locale));
+      issues.push(...this.checkFormLabels(locale));
 
       this.logger.info(`Semantic check completed. Found ${issues.length} issues.`);
       return issues;
@@ -27,28 +48,28 @@ export class SemanticChecker {
     }
   }
 
-  private checkPageTitle(): AccessibilityIssue[] {
+  private checkPageTitle(locale: AppLocale): AccessibilityIssue[] {
     const title = document.title?.trim();
     if (!title) {
       return [
         {
           id: `missing-title-${Date.now()}`,
           element: this.bodyInfo(),
-          description: 'Page is missing a <title> element',
-          help: 'Every page should have a descriptive title',
+          description: missingTitleDescription(locale),
+          help: missingTitleHelp(locale),
           helpUrl: 'https://www.w3.org/WAI/WCAG21/Understanding/page-titled.html',
           impact: 'serious',
           tags: ['cat.structure', 'wcag2a', 'wcag242'],
           wcagLevels: ['A'],
           wcagCriteria: ['2.4.2'],
-          fixSuggestions: ['Add a <title> element inside <head>'],
+          fixSuggestions: missingTitleFix(locale),
         },
       ];
     }
     return [];
   }
 
-  private checkHeadings(): AccessibilityIssue[] {
+  private checkHeadings(locale: AppLocale): AccessibilityIssue[] {
     const issues: AccessibilityIssue[] = [];
     const headings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'));
 
@@ -57,27 +78,27 @@ export class SemanticChecker {
       issues.push({
         id: `missing-h1-${Date.now()}`,
         element: this.bodyInfo(),
-        description: 'Page is missing an H1 heading',
-        help: 'Pages should have exactly one H1 heading',
+        description: missingH1Description(locale),
+        help: missingH1Help(locale),
         helpUrl: 'https://www.w3.org/WAI/tutorials/page-structure/headings/',
         impact: 'moderate',
         tags: ['cat.structure', 'wcag2a', 'wcag131'],
         wcagLevels: ['A'],
         wcagCriteria: ['1.3.1'],
-        fixSuggestions: ['Add an H1 heading that describes the page content'],
+        fixSuggestions: missingH1Fix(locale),
       });
     } else if (h1Count > 1) {
       issues.push({
         id: `multiple-h1-${Date.now()}`,
         element: this.bodyInfo(),
-        description: `Page has ${h1Count} H1 headings (expected 1)`,
-        help: 'Best practice is to have a single H1 per page',
+        description: multipleH1Description(locale, h1Count),
+        help: multipleH1Help(locale),
         helpUrl: 'https://www.w3.org/WAI/tutorials/page-structure/headings/',
         impact: 'minor',
         tags: ['cat.structure', 'best-practice'],
         wcagLevels: ['A'],
         wcagCriteria: ['1.3.1'],
-        fixSuggestions: ['Consolidate to a single H1 and use H2+ for subsections'],
+        fixSuggestions: multipleH1Fix(locale),
       });
     }
 
@@ -88,14 +109,14 @@ export class SemanticChecker {
         issues.push({
           id: `heading-skip-${i}-${Date.now()}`,
           element: this.getElementInfo(heading),
-          description: `Heading level jumps from H${previousLevel} to H${level}`,
-          help: 'Heading levels should increase by one at a time',
+          description: headingSkipDescription(locale, previousLevel, level),
+          help: headingSkipHelp(locale),
           helpUrl: 'https://www.w3.org/WAI/tutorials/page-structure/headings/',
           impact: 'moderate',
           tags: ['cat.structure', 'wcag2a', 'wcag131'],
           wcagLevels: ['A'],
           wcagCriteria: ['1.3.1'],
-          fixSuggestions: [`Change to H${previousLevel + 1} or add intermediate heading`],
+          fixSuggestions: headingSkipFix(locale, previousLevel),
         });
       }
       previousLevel = level;
@@ -104,7 +125,7 @@ export class SemanticChecker {
     return issues;
   }
 
-  private checkLandmarks(): AccessibilityIssue[] {
+  private checkLandmarks(locale: AppLocale): AccessibilityIssue[] {
     const issues: AccessibilityIssue[] = [];
 
     const required: Array<{ role: string; selectors: string; tag: string }> = [
@@ -118,14 +139,14 @@ export class SemanticChecker {
         issues.push({
           id: `missing-landmark-${role}-${Date.now()}`,
           element: this.bodyInfo(),
-          description: `Missing landmark: ${role}`,
-          help: `Add a <${tag}> element or role="${role}" attribute`,
+          description: missingLandmarkDescription(locale, role),
+          help: missingLandmarkHelp(locale, tag, role),
           helpUrl: 'https://www.w3.org/WAI/tutorials/page-structure/regions/',
           impact: 'moderate',
           tags: ['cat.structure', 'wcag2a', 'wcag131'],
           wcagLevels: ['A'],
           wcagCriteria: ['1.3.1'],
-          fixSuggestions: [`Add <${tag}> element or an element with role="${role}"`],
+          fixSuggestions: missingLandmarkFix(locale, tag, role),
         });
       }
     });
@@ -133,7 +154,7 @@ export class SemanticChecker {
     return issues;
   }
 
-  private checkFormLabels(): AccessibilityIssue[] {
+  private checkFormLabels(locale: AppLocale): AccessibilityIssue[] {
     const issues: AccessibilityIssue[] = [];
 
     const inputs = document.querySelectorAll(
@@ -146,17 +167,14 @@ export class SemanticChecker {
       issues.push({
         id: `form-label-${index}-${Date.now()}`,
         element: this.getElementInfo(input),
-        description: 'Form input missing associated label',
-        help: 'All form inputs should have a label',
+        description: formLabelDescription(locale),
+        help: formLabelHelp(locale),
         helpUrl: 'https://www.w3.org/WAI/tutorials/forms/labels/',
         impact: 'serious',
         tags: ['cat.forms', 'wcag2a', 'wcag131', 'wcag332'],
         wcagLevels: ['A'],
         wcagCriteria: ['1.3.1', '3.3.2'],
-        fixSuggestions: [
-          'Add <label for="inputId">Label</label>',
-          'Or use aria-label attribute',
-        ],
+        fixSuggestions: formLabelFix(locale),
       });
     });
 

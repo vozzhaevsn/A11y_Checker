@@ -51,6 +51,7 @@ describe('Validator', () => {
     it('validates correct settings', () => {
       const settings: Settings = {
         wcagLevel: 'AA',
+        locale: 'en',
         includeColorContrast: true,
         includeImages: true,
         includeKeyboard: true,
@@ -74,6 +75,12 @@ describe('Validator', () => {
     it('rejects invalid theme', () => {
       expect(
         validator.validateSettings({ wcagLevel: 'AA', theme: 'blue' as 'light' } as Settings),
+      ).toBe(false);
+    });
+
+    it('rejects invalid locale', () => {
+      expect(
+        validator.validateSettings({ wcagLevel: 'AA', locale: 'fr' as 'en', theme: 'light' } as Settings),
       ).toBe(false);
     });
   });

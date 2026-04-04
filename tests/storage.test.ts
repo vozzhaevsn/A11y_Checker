@@ -75,6 +75,7 @@ describe('StorageUtil', () => {
   it('saves and retrieves settings', async () => {
     const settings: Settings = {
       wcagLevel: 'AAA',
+      locale: 'en',
       includeColorContrast: false,
       includeImages: true,
       includeKeyboard: false,
@@ -93,6 +94,7 @@ describe('StorageUtil', () => {
   it('returns default settings when none stored', async () => {
     const settings = await storage.getSettings();
     expect(settings.wcagLevel).toBe('AA');
+    expect(settings.locale).toBe('en');
     expect(settings.theme).toBe('light');
   });
 

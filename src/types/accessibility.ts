@@ -16,6 +16,8 @@ export interface ElementInfo {
 
 export interface Settings {
   wcagLevel: 'A' | 'AA' | 'AAA';
+  /** UI, reports, and custom checker messages */
+  locale: 'en' | 'ru';
   includeColorContrast: boolean;
   includeImages: boolean;
   includeKeyboard: boolean;
