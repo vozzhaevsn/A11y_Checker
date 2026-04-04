@@ -1,6 +1,7 @@
 import { Scanner } from '../core/scanner';
 import { Settings, ScanResult } from '../types';
 import { Logger } from '../utils/logger';
+import { createDefaultSettings } from '../utils/settings-defaults';
 
 class ContentScript {
   private scanner: Scanner;
@@ -16,15 +17,7 @@ class ContentScript {
   }
 
   private getDefaultSettings(): Settings {
-    return {
-      wcagLevel: 'AA',
-      includeColorContrast: true,
-      includeImages: true,
-      includeKeyboard: true,
-      includeSemantics: true,
-      autoScanOnLoad: false,
-      theme: 'light',
-    };
+    return createDefaultSettings();
   }
 
   private setupMessageListener(): void {

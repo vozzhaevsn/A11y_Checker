@@ -14,6 +14,7 @@ import { ImageChecker } from '../checkers/images';
 import { SemanticChecker } from '../checkers/semantic';
 import { KeyboardChecker } from '../checkers/keyboard';
 import { Logger } from '../utils/logger';
+import { localizeAxeFailureSummary } from '../i18n/axe-failure-summary';
 
 export class Scanner {
   private axeEngine: AxeEngine;
@@ -40,23 +41,25 @@ export class Scanner {
 
       let issues: AccessibilityIssue[] = [];
 
+      const locale = this.settings.locale;
+
       if (this.settings.includeColorContrast) {
-        const contrastIssues = await this.contrastChecker.check();
+        const contrastIssues = await this.contrastChecker.check(locale);
         issues = [...issues, ...contrastIssues];
       }
 
       if (this.settings.includeImages) {
-        const imageIssues = await this.imageChecker.check();
+        const imageIssues = await this.imageChecker.check(locale);
         issues = [...issues, ...imageIssues];
       }
 
       if (this.settings.includeSemantics) {
-        const semanticIssues = await this.semanticChecker.check();
+        const semanticIssues = await this.semanticChecker.check(locale);
         issues = [...issues, ...semanticIssues];
       }
 
       if (this.settings.includeKeyboard) {
-        const keyboardIssues = await this.keyboardChecker.check();
+        const keyboardIssues = await this.keyboardChecker.check(locale);
         issues = [...issues, ...keyboardIssues];
       }
 
@@ -95,7 +98,9 @@ export class Scanner {
           tags: violation.tags,
           wcagLevels: this.extractWcagLevels(violation.tags),
           wcagCriteria: this.extractWcagCriteria(violation.tags),
-          fixSuggestions: node.failureSummary ? [node.failureSummary] : [],
+          fixSuggestions: node.failureSummary
+            ? [localizeAxeFailureSummary(node.failureSummary, this.settings.locale)]
+            : [],
         };
 
         issues.push(issue);

@@ -1,5 +1,19 @@
 import { KeyboardResult, AccessibilityIssue, ElementInfo } from '../types';
 import { Logger } from '../utils/logger';
+import type { AppLocale } from '../i18n/locale';
+import {
+  keyboardGenericDescription,
+  keyboardHelpFocus,
+  keyboardHelpGeneric,
+  keyboardHelpNotAccessible,
+  keyboardHelpTabIndex,
+  keyboardNoFocusDescription,
+  keyboardNotAccessibleDescription,
+  keyboardSuggestFocusable,
+  keyboardSuggestFocusStyle,
+  keyboardSuggestTabIndex,
+  keyboardTabIndexDescription,
+} from '../i18n/checker-messages';
 
 export class KeyboardChecker {
   private logger: Logger;
@@ -8,7 +22,7 @@ export class KeyboardChecker {
     this.logger = new Logger('KeyboardChecker');
   }
 
-  async check(): Promise<AccessibilityIssue[]> {
+  async check(locale: AppLocale = 'en'): Promise<AccessibilityIssue[]> {
     try {
       this.logger.info('Starting keyboard accessibility check');
 
@@ -22,14 +36,14 @@ export class KeyboardChecker {
           issues.push({
             id: `keyboard-${element.tagName}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
             element,
-            description: this.getDescription(result),
-            help: this.getHelp(result),
+            description: this.getDescription(locale, result),
+            help: this.getHelp(locale, result),
             helpUrl: 'https://www.w3.org/WAI/WCAG21/Understanding/keyboard.html',
             impact: result.isKeyboardAccessible ? 'moderate' : 'serious',
             tags: ['cat.keyboard', 'wcag2a', 'wcag211'],
             wcagLevels: ['A'],
             wcagCriteria: ['2.1.1'],
-            fixSuggestions: this.getSuggestions(result),
+            fixSuggestions: this.getSuggestions(locale, result),
           });
         }
       }
@@ -126,31 +140,30 @@ export class KeyboardChecker {
     return style.outlineWidth !== '0px' && style.outlineStyle !== 'none';
   }
 
-  private getDescription(result: KeyboardResult): string {
-    if (!result.isKeyboardAccessible) return 'Interactive element is not keyboard accessible';
-    if (!result.tabIndexValid) return 'Element has positive tabindex (disrupts tab order)';
-    if (!result.hasFocusIndicator) return 'Element missing visible focus indicator';
-    return 'Keyboard accessibility issue detected';
+  private getDescription(locale: AppLocale, result: KeyboardResult): string {
+    if (!result.isKeyboardAccessible) return keyboardNotAccessibleDescription(locale);
+    if (!result.tabIndexValid) return keyboardTabIndexDescription(locale);
+    if (!result.hasFocusIndicator) return keyboardNoFocusDescription(locale);
+    return keyboardGenericDescription(locale);
   }
 
-  private getHelp(result: KeyboardResult): string {
-    if (!result.isKeyboardAccessible) return 'Add tabindex="0" or use a semantic interactive element';
-    if (!result.tabIndexValid) return 'Avoid positive tabindex values';
-    if (!result.hasFocusIndicator) return 'Add a visible :focus style (outline, border, etc.)';
-    return 'Ensure element is fully keyboard accessible';
+  private getHelp(locale: AppLocale, result: KeyboardResult): string {
+    if (!result.isKeyboardAccessible) return keyboardHelpNotAccessible(locale);
+    if (!result.tabIndexValid) return keyboardHelpTabIndex(locale);
+    if (!result.hasFocusIndicator) return keyboardHelpFocus(locale);
+    return keyboardHelpGeneric(locale);
   }
 
-  private getSuggestions(result: KeyboardResult): string[] {
+  private getSuggestions(locale: AppLocale, result: KeyboardResult): string[] {
     const suggestions: string[] = [];
     if (!result.isKeyboardAccessible) {
-      suggestions.push('Add tabindex="0" to make element focusable');
-      suggestions.push('Or use <button> / <a> instead of <div> with onclick');
+      suggestions.push(...keyboardSuggestFocusable(locale));
     }
     if (!result.tabIndexValid) {
-      suggestions.push('Replace positive tabindex with tabindex="0"');
+      suggestions.push(...keyboardSuggestTabIndex(locale));
     }
     if (!result.hasFocusIndicator) {
-      suggestions.push('Add CSS: element:focus { outline: 2px solid #667eea; }');
+      suggestions.push(...keyboardSuggestFocusStyle(locale));
     }
     return suggestions;
   }

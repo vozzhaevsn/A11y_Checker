@@ -7,17 +7,20 @@ jest.mock('axe-core', () => ({
   default: {
     run: jest.fn(),
     reset: jest.fn(),
+    configure: jest.fn(),
   },
 }));
 
 const mockedAxe = axe as unknown as {
   run: jest.Mock;
   reset: jest.Mock;
+  configure: jest.Mock;
 };
 
 describe('AxeEngine', () => {
   const baseSettings: Settings = {
     wcagLevel: 'AA',
+    locale: 'en',
     includeColorContrast: true,
     includeImages: true,
     includeKeyboard: true,
@@ -33,6 +36,7 @@ describe('AxeEngine', () => {
       incomplete: [],
     });
     mockedAxe.reset.mockReturnValue(undefined);
+    mockedAxe.configure.mockReturnValue(undefined);
   });
 
   afterEach(() => {
@@ -43,6 +47,8 @@ describe('AxeEngine', () => {
     const engine = new AxeEngine();
     const result = await engine.scan(baseSettings);
 
+    expect(mockedAxe.reset).toHaveBeenCalled();
+    expect(mockedAxe.configure).not.toHaveBeenCalled();
     expect(mockedAxe.run).toHaveBeenCalledTimes(1);
     const [docArg, configArg] = mockedAxe.run.mock.calls[0];
     expect(docArg).toBe(document);
@@ -76,6 +82,14 @@ describe('AxeEngine', () => {
     const engine = new AxeEngine();
     engine.reset();
     expect(mockedAxe.reset).toHaveBeenCalledTimes(1);
+  });
+
+  it('configures Russian locale when locale is ru', async () => {
+    const engine = new AxeEngine();
+    await engine.scan({ ...baseSettings, locale: 'ru' });
+
+    expect(mockedAxe.configure).toHaveBeenCalledTimes(1);
+    expect(mockedAxe.configure.mock.calls[0][0]).toMatchObject({ locale: expect.any(Object) });
   });
 
   it('throws when axe.run rejects', async () => {

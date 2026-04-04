@@ -21,6 +21,7 @@ const MockedKeyboard = KeyboardChecker as jest.MockedClass<typeof KeyboardChecke
 describe('Scanner', () => {
   const baseSettings: Settings = {
     wcagLevel: 'AA',
+    locale: 'en',
     includeColorContrast: true,
     includeImages: true,
     includeKeyboard: true,

@@ -1,5 +1,7 @@
 import { ScanResult, Settings } from '../types';
 import { Logger } from '../utils/logger';
+import { createDefaultSettings, normalizeSettings } from '../utils/settings-defaults';
+import { contextMenuTitle } from '../i18n';
 
 interface StorageData {
   scanResults: ScanResult[];
@@ -24,18 +26,6 @@ class BackgroundScript {
   private initialize(): void {
     this.logger.info('Background script initialized');
     this.setupContextMenu();
-    this.setupMessageListener();
-  }
-
-  private setupContextMenu(): void {
-    chrome.contextMenus.removeAll(() => {
-      chrome.contextMenus.create({
-        id: 'a11y-check-page',
-        title: 'Check page accessibility',
-        contexts: ['page', 'frame'],
-      });
-    });
-
     chrome.contextMenus.onClicked.addListener((info, tab) => {
       if (info.menuItemId === 'a11y-check-page') {
         if (!tab || typeof tab.id !== 'number' || tab.id < 0) {
@@ -52,6 +42,20 @@ class BackgroundScript {
             this.logger.error('Failed to trigger scan from context menu', error);
           });
       }
+    });
+    this.setupMessageListener();
+  }
+
+  private setupContextMenu(): void {
+    void this.getStorageData().then((data) => {
+      const title = contextMenuTitle(data.settings.locale);
+      chrome.contextMenus.removeAll(() => {
+        chrome.contextMenus.create({
+          id: 'a11y-check-page',
+          title,
+          contexts: ['page', 'frame'],
+        });
+      });
     });
   }
 
@@ -151,6 +155,7 @@ class BackgroundScript {
     const data = await this.getStorageData();
     data.settings = { ...data.settings, ...partial };
     await chrome.storage.local.set({ a11yCheckerData: data });
+    this.setupContextMenu();
     this.logger.info('Settings updated');
   }
 
@@ -166,20 +171,13 @@ class BackgroundScript {
     const data = stored['a11yCheckerData'] as StorageData | undefined;
 
     if (data) {
+      data.settings = normalizeSettings(data.settings);
       return data;
     }
 
     return {
       scanResults: [],
-      settings: {
-        wcagLevel: 'AA',
-        includeColorContrast: true,
-        includeImages: true,
-        includeKeyboard: true,
-        includeSemantics: true,
-        autoScanOnLoad: false,
-        theme: 'light',
-      },
+      settings: createDefaultSettings(),
       currentTabId: null,
     };
   }

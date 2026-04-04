@@ -23,6 +23,7 @@ export class Validator {
   validateSettings(settings: Settings): boolean {
     if (!settings) return false;
     if (!['A', 'AA', 'AAA'].includes(settings.wcagLevel)) return false;
+    if (!['en', 'ru'].includes(settings.locale)) return false;
     if (!['light', 'dark'].includes(settings.theme)) return false;
     return true;
   }

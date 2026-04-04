@@ -1,5 +1,6 @@
 import { ScanResult, Settings } from '../types';
 import { Logger } from './logger';
+import { createDefaultSettings } from './settings-defaults';
 
 export class StorageUtil {
   private logger: Logger;
@@ -65,14 +66,6 @@ export class StorageUtil {
   }
 
   private getDefaultSettings(): Settings {
-    return {
-      wcagLevel: 'AA',
-      includeColorContrast: true,
-      includeImages: true,
-      includeKeyboard: true,
-      includeSemantics: true,
-      autoScanOnLoad: false,
-      theme: 'light',
-    };
+    return createDefaultSettings();
   }
 }

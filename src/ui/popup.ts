@@ -1,5 +1,13 @@
 import { ScanResult, Settings, AccessibilityIssue } from '../types';
 import { ExportUtil } from '../utils/export';
+import type { AppLocale } from '../i18n/locale';
+import { isAppLocale } from '../i18n/locale';
+import {
+  formatNoFilteredIssuesPlaceholder,
+  getImpactLabel,
+  getPopupUi,
+  type ImpactKey,
+} from '../i18n/messages';
 
 class PopupUI {
   private scanBtn!: HTMLButtonElement;
@@ -21,18 +29,25 @@ class PopupUI {
   private settingKeyboard!: HTMLInputElement;
   private settingsSave!: HTMLButtonElement;
   private settingsCancel!: HTMLButtonElement;
+  private settingLocale!: HTMLSelectElement;
+  private settingLocaleLabel!: HTMLElement;
 
   private filterButtons!: NodeListOf<HTMLElement>;
   private activeFilter: string = 'all';
 
   private currentResult: ScanResult | null = null;
   private exporter = new ExportUtil();
+  private uiLocale: AppLocale = 'en';
 
   constructor() {
     this.bindElements();
     this.initializeEventListeners();
-    this.loadSettings();
-    this.loadLastScan();
+    void this.bootstrap();
+  }
+
+  private async bootstrap(): Promise<void> {
+    await this.loadSettings();
+    await this.loadLastScan();
   }
 
   private bindElements(): void {
@@ -55,6 +70,8 @@ class PopupUI {
     this.settingKeyboard = document.getElementById('setting-keyboard') as HTMLInputElement;
     this.settingsSave = document.getElementById('settings-save') as HTMLButtonElement;
     this.settingsCancel = document.getElementById('settings-cancel') as HTMLButtonElement;
+    this.settingLocale = document.getElementById('setting-locale') as HTMLSelectElement;
+    this.settingLocaleLabel = document.getElementById('setting-locale-label') as HTMLElement;
 
     this.filterButtons = document.querySelectorAll('.filter-btn') as NodeListOf<HTMLElement>;
   }
@@ -69,7 +86,8 @@ class PopupUI {
 
     this.wcagLevelSelect.addEventListener('change', () => {
       const level = this.wcagLevelSelect.value as 'A' | 'AA' | 'AAA';
-      this.footerLabel.textContent = `WCAG 2.1 Level ${level}`;
+      const ui = getPopupUi(this.uiLocale);
+      this.footerLabel.textContent = ui.footerWcag(level);
       void this.updateRemoteSettings({ wcagLevel: level });
     });
 
@@ -98,16 +116,63 @@ class PopupUI {
       const response = await chrome.runtime.sendMessage({ action: 'getSettings' });
       if (response?.success && response.settings) {
         const s = response.settings as Settings;
+        this.uiLocale = isAppLocale(s.locale) ? s.locale : 'en';
         this.wcagLevelSelect.value = s.wcagLevel;
-        this.footerLabel.textContent = `WCAG 2.1 Level ${s.wcagLevel}`;
+        this.settingLocale.value = this.uiLocale;
         this.settingContrast.checked = s.includeColorContrast;
         this.settingImages.checked = s.includeImages;
         this.settingSemantics.checked = s.includeSemantics;
         this.settingKeyboard.checked = s.includeKeyboard;
+        this.applyPopupUi();
       }
     } catch {
       /* use defaults */
     }
+  }
+
+  private applyPopupUi(): void {
+    const ui = getPopupUi(this.uiLocale);
+    document.documentElement.lang = this.uiLocale === 'ru' ? 'ru' : 'en';
+    document.title = ui.documentTitle;
+
+    (document.querySelector('.title') as HTMLElement).textContent = ui.appTitle;
+    (document.getElementById('app-subtitle') as HTMLElement).textContent = ui.subtitle;
+
+    this.scanBtn.textContent = ui.scanPage;
+    this.clearBtn.textContent = ui.clear;
+    this.settingsBtn.textContent = ui.settings;
+
+    (document.querySelector('label[for="wcag-level"]') as HTMLElement).textContent = ui.wcagLevelLabel;
+
+    this.filterButtons.forEach((btn) => {
+      const f = btn.dataset['filter'];
+      if (f === 'all') btn.textContent = ui.filterAll;
+      else if (f === 'critical') btn.textContent = ui.filterCritical;
+      else if (f === 'serious') btn.textContent = ui.filterSerious;
+      else if (f === 'moderate') btn.textContent = ui.filterModerate;
+      else if (f === 'minor') btn.textContent = ui.filterMinor;
+    });
+
+    const summaryLabels = ['summaryTotal', 'summaryCritical', 'summarySerious', 'summaryModerate', 'summaryMinor'] as const;
+    document.querySelectorAll('#summary-container .summary-label').forEach((el, i) => {
+      const key = summaryLabels[i];
+      if (key) el.textContent = ui[key];
+    });
+
+    this.exportJsonBtn.textContent = ui.exportJson;
+    this.exportHtmlBtn.textContent = ui.exportHtml;
+    this.exportCsvBtn.textContent = ui.exportCsv;
+
+    this.footerLabel.textContent = ui.footerWcag(this.wcagLevelSelect.value);
+
+    (document.getElementById('settings-title') as HTMLElement).textContent = ui.settingsTitle;
+    this.settingLocaleLabel.textContent = ui.settingLocaleLabel;
+    (document.querySelector('label[for="setting-contrast"]') as HTMLElement).textContent = ui.settingContrast;
+    (document.querySelector('label[for="setting-images"]') as HTMLElement).textContent = ui.settingImages;
+    (document.querySelector('label[for="setting-semantics"]') as HTMLElement).textContent = ui.settingSemantics;
+    (document.querySelector('label[for="setting-keyboard"]') as HTMLElement).textContent = ui.settingKeyboard;
+    this.settingsCancel.textContent = ui.settingsCancel;
+    this.settingsSave.textContent = ui.settingsSave;
   }
 
   private openSettings(): void {
@@ -119,14 +184,21 @@ class PopupUI {
   }
 
   private async saveSettings(): Promise<void> {
+    const loc = this.settingLocale.value;
+    this.uiLocale = isAppLocale(loc) ? loc : 'en';
     const partial: Partial<Settings> = {
       wcagLevel: this.wcagLevelSelect.value as 'A' | 'AA' | 'AAA',
+      locale: this.uiLocale,
       includeColorContrast: this.settingContrast.checked,
       includeImages: this.settingImages.checked,
       includeSemantics: this.settingSemantics.checked,
       includeKeyboard: this.settingKeyboard.checked,
     };
     await this.updateRemoteSettings(partial);
+    this.applyPopupUi();
+    if (this.currentResult) {
+      this.renderIssuesList(this.currentResult.issues);
+    }
     this.closeSettings();
   }
 
@@ -177,7 +249,8 @@ class PopupUI {
       this.displayResults(this.currentResult);
     } catch (error) {
       console.error('Scan failed:', error);
-      this.resultsContainer.innerHTML = `<p class="placeholder">Error: ${(error as Error).message}</p>`;
+      const ui = getPopupUi(this.uiLocale);
+      this.resultsContainer.innerHTML = `<p class="placeholder">${this.escapeHtml(ui.errorPrefix)} ${this.escapeHtml((error as Error).message)}</p>`;
       this.summaryContainer.style.display = 'none';
       this.exportActions.style.display = 'none';
     } finally {
@@ -191,7 +264,8 @@ class PopupUI {
     this.currentResult = null;
     this.summaryContainer.style.display = 'none';
     this.exportActions.style.display = 'none';
-    this.resultsContainer.innerHTML = '<p class="placeholder">Click "Scan Page" to start accessibility analysis</p>';
+    const ui = getPopupUi(this.uiLocale);
+    this.resultsContainer.innerHTML = `<p class="placeholder">${this.escapeHtml(ui.placeholderInitial)}</p>`;
 
     try {
       await chrome.runtime.sendMessage({ action: 'clearResults' });
@@ -233,10 +307,11 @@ class PopupUI {
         : issues.filter((i) => i.impact === this.activeFilter);
 
     if (filtered.length === 0) {
+      const ui = getPopupUi(this.uiLocale);
       this.resultsContainer.innerHTML =
         this.activeFilter === 'all'
-          ? '<p class="placeholder">No accessibility issues found.</p>'
-          : `<p class="placeholder">No ${this.activeFilter} issues.</p>`;
+          ? `<p class="placeholder">${this.escapeHtml(ui.placeholderNoIssues)}</p>`
+          : `<p class="placeholder">${this.escapeHtml(formatNoFilteredIssuesPlaceholder(this.uiLocale, this.activeFilter))}</p>`;
       return;
     }
 
@@ -246,15 +321,17 @@ class PopupUI {
 
       const selector = this.buildSelector(issue);
 
+      const ui = getPopupUi(this.uiLocale);
+      const impactLabel = getImpactLabel(this.uiLocale, issue.impact as ImpactKey);
       item.innerHTML = `
         <div class="issue-header">
           <span class="issue-description">${this.escapeHtml(issue.description)}</span>
-          <span class="issue-impact ${issue.impact}">${issue.impact.toUpperCase()}</span>
+          <span class="issue-impact ${issue.impact}">${this.escapeHtml(impactLabel)}</span>
         </div>
         <div class="issue-element">&lt;${this.escapeHtml(issue.element.tagName)}${
           issue.element.id ? ` id="${this.escapeHtml(issue.element.id)}"` : ''
         }${issue.element.className ? ` class="${this.escapeHtml(issue.element.className)}"` : ''}&gt;</div>
-        <div class="issue-wcag">WCAG ${issue.wcagCriteria.join(', ')}</div>
+        <div class="issue-wcag">${this.escapeHtml(ui.issueWcagPrefix)} ${issue.wcagCriteria.join(', ')}</div>
         <div class="issue-details">
           <div class="help-text">${this.escapeHtml(issue.help)}</div>
           ${
@@ -310,12 +387,12 @@ class PopupUI {
         extension = 'json';
         break;
       case 'html':
-        content = this.exporter.exportAsHtml(this.currentResult);
+        content = this.exporter.exportAsHtml(this.currentResult, this.uiLocale);
         mime = 'text/html';
         extension = 'html';
         break;
       case 'csv':
-        content = this.exporter.exportAsCsv(this.currentResult);
+        content = this.exporter.exportAsCsv(this.currentResult, this.uiLocale);
         mime = 'text/csv';
         extension = 'csv';
         break;
@@ -334,12 +411,14 @@ class PopupUI {
   /* ---------- helpers ---------- */
 
   private setLoadingState(isLoading: boolean): void {
+    const ui = getPopupUi(this.uiLocale);
     this.scanBtn.disabled = isLoading;
-    this.scanBtn.textContent = isLoading ? 'Scanning...' : 'Scan Page';
+    this.scanBtn.textContent = isLoading ? ui.scanning : ui.scanPage;
   }
 
   private clearResultsUI(): void {
-    this.resultsContainer.innerHTML = '<p class="placeholder">Running accessibility scan...</p>';
+    const ui = getPopupUi(this.uiLocale);
+    this.resultsContainer.innerHTML = `<p class="placeholder">${this.escapeHtml(ui.placeholderScanning)}</p>`;
   }
 
   private escapeHtml(str: string): string {

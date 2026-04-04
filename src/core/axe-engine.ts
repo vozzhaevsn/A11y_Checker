@@ -1,7 +1,20 @@
 import axe from 'axe-core';
-import type { RunOptions, AxeResults } from 'axe-core';
+import type { AxeResults, Locale, RunOptions } from 'axe-core';
+import ruLocale from 'axe-core/locales/ru.json';
 import { AxeCoreResult, Settings } from '../types';
 import { Logger } from '../utils/logger';
+
+/**
+ * Russian locale JSON includes failureSummaries with doT templates ({{...}}).
+ * Applying them calls doT.compile() → new Function(), which violates page CSP.
+ * Default English summaries are pre-compiled in the axe bundle; we keep those
+ * and translate rendered strings in Scanner (localizeAxeFailureSummary).
+ */
+function russianAxeLocaleSafeForCsp(): Locale {
+  const copy = { ...(ruLocale as object) } as Record<string, unknown>;
+  delete copy.failureSummaries;
+  return copy as unknown as Locale;
+}
 
 export class AxeEngine {
   private logger: Logger;
@@ -13,6 +26,11 @@ export class AxeEngine {
   async scan(settings: Settings): Promise<AxeCoreResult> {
     try {
       this.logger.info('Starting axe-core scan');
+
+      axe.reset();
+      if (settings.locale === 'ru') {
+        axe.configure({ locale: russianAxeLocaleSafeForCsp() });
+      }
 
       const config = this.getConfig(settings.wcagLevel);
 

@@ -1,5 +1,15 @@
 import { AccessibilityIssue, ElementInfo } from '../types';
 import { Logger } from '../utils/logger';
+import type { AppLocale } from '../i18n/locale';
+import {
+  genericAltTokens,
+  imageFixMeaningful,
+  imageFixMissing,
+  imageHelpMeaningful,
+  imageHelpMissing,
+  imageMissingAlt,
+  imageSuspiciousAlt,
+} from '../i18n/checker-messages';
 
 export class ImageChecker {
   private logger: Logger;
@@ -8,7 +18,7 @@ export class ImageChecker {
     this.logger = new Logger('ImageChecker');
   }
 
-  async check(): Promise<AccessibilityIssue[]> {
+  async check(locale: AppLocale = 'en'): Promise<AccessibilityIssue[]> {
     try {
       this.logger.info('Starting image accessibility check');
 
@@ -30,17 +40,12 @@ export class ImageChecker {
         if (isExplicitlyDecorative) return;
 
         if (!hasAlt) {
-          issues.push(this.createIssue(el, 'Image missing alt attribute', 'critical', false));
+          issues.push(this.createIssue(locale, el, imageMissingAlt(locale), 'critical', false));
         } else if (altAttr.trim() === '') {
           // empty but not explicitly decorative: already handled above (altAttr === '')
-        } else if (this.isSuspiciousAlt(altAttr)) {
+        } else if (this.isSuspiciousAlt(altAttr, locale)) {
           issues.push(
-            this.createIssue(
-              el,
-              `Image alt text is suspicious (generic): "${altAttr}"`,
-              'moderate',
-              true,
-            ),
+            this.createIssue(locale, el, imageSuspiciousAlt(locale, altAttr), 'moderate', true),
           );
         }
       });
@@ -53,13 +58,14 @@ export class ImageChecker {
     }
   }
 
-  private isSuspiciousAlt(alt: string): boolean {
-    const generic = ['image', 'photo', 'picture', 'img', 'icon', 'graphic', 'logo', 'banner', 'untitled'];
+  private isSuspiciousAlt(alt: string, locale: AppLocale): boolean {
+    const generic = genericAltTokens(locale);
     const lower = alt.toLowerCase().trim();
     return generic.includes(lower) || /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(lower);
   }
 
   private createIssue(
+    locale: AppLocale,
     el: Element,
     description: string,
     impact: 'critical' | 'serious' | 'moderate' | 'minor',
@@ -69,17 +75,13 @@ export class ImageChecker {
       id: `image-alt-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       element: this.getElementInfo(el),
       description,
-      help: hasAlt
-        ? 'Provide a meaningful alt text that describes the image content'
-        : 'Add alt attribute: <img src="..." alt="description">',
+      help: hasAlt ? imageHelpMeaningful(locale) : imageHelpMissing(locale),
       helpUrl: 'https://www.w3.org/WAI/WCAG21/Understanding/non-text-content.html',
       impact,
       tags: ['cat.text-alternatives', 'wcag2a', 'wcag111'],
       wcagLevels: ['A'],
       wcagCriteria: ['1.1.1'],
-      fixSuggestions: hasAlt
-        ? ['Replace generic alt text with a meaningful description']
-        : ['Add descriptive alt text', 'For decorative images, use alt=""'],
+      fixSuggestions: hasAlt ? imageFixMeaningful(locale) : imageFixMissing(locale),
     };
   }
 
