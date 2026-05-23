@@ -1,3 +1,8 @@
+// Ensure webpack loads dynamic chunks from the extension directory, not the page origin
+declare let __webpack_public_path__: string;
+__webpack_public_path__ = chrome.runtime.getURL('');
+void __webpack_public_path__; /* suppress no-unused-vars — used by webpack runtime */
+
 import { Scanner } from '../core/scanner';
 import { Settings, ScanResult } from '../types';
 import { Logger } from '../utils/logger';

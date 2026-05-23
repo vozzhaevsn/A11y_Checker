@@ -45,3 +45,6 @@ const chromeMock = {
 };
 
 (globalThis as any).chrome = chromeMock;
+
+/** Webpack runtime global — referenced by content-script.ts for chunk publicPath */
+(globalThis as any).__webpack_public_path__ = '';
