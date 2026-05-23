@@ -68,7 +68,7 @@ async function loadPanel(): Promise<void> {
 
 describe('DevToolsPanelUI', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     document.body.innerHTML = PANEL_HTML;
   });
 
