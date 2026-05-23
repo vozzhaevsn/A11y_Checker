@@ -51,7 +51,7 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["src/scripts/axe-core.*.js"],
+      "resources": ["src/scripts/axe-core*.js"],
       "matches": ["<all_urls>"]
     }
   ]
