@@ -515,6 +515,73 @@ body {
   text-align: center;
 }
 
+/* ---------- diff view ---------- */
+.diff-summary {
+  padding: 8px 12px;
+  background: var(--color-surface-alt);
+  border-radius: 6px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.diff-legend {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 11px;
+}
+
+.diff-legend-item {
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.diff-section {
+  margin-bottom: 14px;
+}
+
+.diff-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.diff-new {
+  border-left: 3px solid #dc2626 !important;
+}
+
+.diff-new.diff-section-title {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.diff-fixed {
+  border-left: 3px solid #16a34a !important;
+}
+
+.diff-fixed.diff-section-title {
+  background: #bbf7d0;
+  color: #166534;
+}
+
+.diff-unchanged {
+  border-left: 3px solid #94a3b8 !important;
+}
+
+.diff-unchanged.diff-section-title {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.diff-new.diff-legend-item { background: #fecaca; color: #991b1b; }
+.diff-fixed.diff-legend-item { background: #bbf7d0; color: #166534; }
+.diff-unchanged.diff-legend-item { background: #e2e8f0; color: #475569; }
+
 /* ---------- export actions ---------- */
 .export-actions {
   display: flex;

@@ -14,6 +14,7 @@ class PopupUI {
   private clearBtn!: HTMLButtonElement;
   private settingsBtn!: HTMLButtonElement;
   private themeBtn!: HTMLButtonElement;
+  private diffBtn!: HTMLButtonElement;
   private resultsContainer!: HTMLElement;
   private historyContainer!: HTMLElement;
   private summaryContainer!: HTMLElement;
@@ -44,6 +45,8 @@ class PopupUI {
   private activeTab: string = 'issues';
 
   private currentResult: ScanResult | null = null;
+  private diffMode: 'diff' | 'normal' = 'normal';
+  private diffPrevious: ScanResult | null = null;
   private exporter = new ExportUtil();
   private uiLocale: AppLocale = 'en';
   private currentPage: number = 1;
@@ -70,6 +73,7 @@ class PopupUI {
     this.clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
     this.settingsBtn = document.getElementById('settings-btn') as HTMLButtonElement;
     this.themeBtn = document.getElementById('theme-btn') as HTMLButtonElement;
+    this.diffBtn = document.getElementById('diff-btn') as HTMLButtonElement;
     this.resultsContainer = document.getElementById('results-container') as HTMLElement;
     this.historyContainer = document.getElementById('history-container') as HTMLElement;
     this.summaryContainer = document.getElementById('summary-container') as HTMLElement;
@@ -106,6 +110,7 @@ class PopupUI {
     this.clearBtn.addEventListener('click', () => void this.clearResults());
     this.settingsBtn.addEventListener('click', () => this.openSettings());
     this.themeBtn.addEventListener('click', () => this.toggleTheme());
+    this.diffBtn.addEventListener('click', () => void this.toggleDiff());
     this.exportJsonBtn.addEventListener('click', () => this.exportResults('json'));
     this.exportHtmlBtn.addEventListener('click', () => this.exportResults('html'));
     this.exportCsvBtn.addEventListener('click', () => this.exportResults('csv'));
@@ -414,6 +419,7 @@ class PopupUI {
 
   private async clearResults(): Promise<void> {
     this.currentResult = null;
+    this.diffBtn.style.display = 'none';
     this.summaryContainer.style.display = 'none';
     this.exportActions.style.display = 'none';
     const ui = getPopupUi(this.uiLocale);
@@ -435,11 +441,113 @@ class PopupUI {
     }
   }
 
+  /* ---------- diff ---------- */
+
+  private issueKey(issue: AccessibilityIssue): string {
+    return this.buildSelector(issue) + '|' + (issue.wcagCriteria[0] ?? issue.id);
+  }
+
+  private async findPreviousScan(url: string, currentId: string): Promise<ScanResult | null> {
+    try {
+      const response = await chrome.runtime.sendMessage({ action: 'getAllScans' });
+      if (!response?.success || !Array.isArray(response.results)) return null;
+      return (response.results as ScanResult[]).find(
+        (r) => r.url === url && r.id !== currentId,
+      ) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async toggleDiff(): Promise<void> {
+    if (this.diffMode === 'diff') {
+      this.diffMode = 'normal';
+      const ui = getPopupUi(this.uiLocale);
+      this.diffBtn.textContent = ui.diffCompare;
+      if (this.currentResult) this.displayResults(this.currentResult);
+      return;
+    }
+
+    if (!this.currentResult) return;
+
+    const prev = await this.findPreviousScan(this.currentResult.url, this.currentResult.id);
+    if (!prev) return;
+
+    this.diffMode = 'diff';
+    this.diffPrevious = prev;
+    const ui = getPopupUi(this.uiLocale);
+    this.diffBtn.textContent = ui.diffExit;
+    this.renderDiffView(prev, this.currentResult);
+  }
+
+  private renderDiffView(prev: ScanResult, curr: ScanResult): void {
+    this.summaryContainer.style.display = 'block';
+    this.exportActions.style.display = 'flex';
+
+    const prevKeys = new Set(prev.issues.map((i) => this.issueKey(i)));
+    const currKeys = new Set(curr.issues.map((i) => this.issueKey(i)));
+
+    const newIssues = curr.issues.filter((i) => !prevKeys.has(this.issueKey(i)));
+    const fixedIssues = prev.issues.filter((i) => !currKeys.has(this.issueKey(i)));
+    const unchanged = curr.issues.filter((i) => prevKeys.has(this.issueKey(i)));
+
+    this.resultsContainer.innerHTML = '';
+
+    const ui = getPopupUi(this.uiLocale);
+    const summary = document.createElement('div');
+    summary.className = 'diff-summary';
+    summary.innerHTML = `<p>${this.escapeHtml(ui.diffSummary(newIssues.length, fixedIssues.length, unchanged.length))}</p>`;
+    this.resultsContainer.appendChild(summary);
+
+    const legend = document.createElement('div');
+    legend.className = 'diff-legend';
+    legend.innerHTML = `
+      <span class="diff-legend-item diff-new">${this.escapeHtml(ui.diffNew)}</span>
+      <span class="diff-legend-item diff-fixed">${this.escapeHtml(ui.diffFixed)}</span>
+      <span class="diff-legend-item diff-unchanged">${this.escapeHtml(ui.diffUnchanged)}</span>
+    `;
+    this.resultsContainer.appendChild(legend);
+
+    const renderSection = (title: string, issues: AccessibilityIssue[], cssClass: string) => {
+      if (issues.length === 0) return;
+      const section = document.createElement('div');
+      section.className = 'diff-section';
+      const h3 = document.createElement('h3');
+      h3.className = `diff-section-title ${cssClass}`;
+      h3.textContent = `${title} (${issues.length})`;
+      section.appendChild(h3);
+      issues.forEach((issue) => {
+        const selector = this.buildSelector(issue);
+        const card = this.buildIssueCard(issue, selector);
+        card.classList.add(cssClass);
+        section.appendChild(card);
+      });
+      this.resultsContainer.appendChild(section);
+    };
+
+    renderSection(ui.diffNew, newIssues, 'diff-new');
+    renderSection(ui.diffFixed, fixedIssues, 'diff-fixed');
+    renderSection(ui.diffUnchanged, unchanged, 'diff-unchanged');
+
+    this.paginationContainer.style.display = 'none';
+  }
+
   /* ---------- display ---------- */
 
   private displayResults(result: ScanResult): void {
+    this.diffMode = 'normal';
     this.summaryContainer.style.display = 'grid';
     this.exportActions.style.display = 'flex';
+
+    void this.findPreviousScan(result.url, result.id).then((prev) => {
+      if (prev) {
+        const ui = getPopupUi(this.uiLocale);
+        this.diffBtn.textContent = ui.diffCompare;
+        this.diffBtn.style.display = '';
+      } else {
+        this.diffBtn.style.display = 'none';
+      }
+    });
 
     (document.getElementById('total-count') as HTMLElement).textContent = String(result.summary.total);
     (document.getElementById('critical-count') as HTMLElement).textContent = String(result.summary.critical);

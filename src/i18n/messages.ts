@@ -51,6 +51,12 @@ export interface PopupUiStrings {
   wcagCriterionAll: string;
   settingAutoScan: string;
   settingTheme: string;
+  diffCompare: string;
+  diffExit: string;
+  diffNew: string;
+  diffFixed: string;
+  diffUnchanged: string;
+  diffSummary: (nNew: number, nFixed: number, nUnchanged: number) => string;
 }
 
 export interface ExportReportStrings {
@@ -139,6 +145,12 @@ const popupEn: PopupUiStrings = {
   wcagCriterionAll: 'All',
   settingAutoScan: 'Auto-scan on page load',
   settingTheme: 'Dark theme',
+  diffCompare: 'Compare with previous',
+  diffExit: 'Exit diff',
+  diffNew: 'New',
+  diffFixed: 'Fixed',
+  diffUnchanged: 'Unchanged',
+  diffSummary: (nNew, nFixed, nUnchanged) => `${nNew} new, ${nFixed} fixed, ${nUnchanged} unchanged`,
 };
 
 const popupRu: PopupUiStrings = {
@@ -190,6 +202,12 @@ const popupRu: PopupUiStrings = {
   wcagCriterionAll: 'Все',
   settingAutoScan: 'Автосканирование при загрузке',
   settingTheme: 'Тёмная тема',
+  diffCompare: 'Сравнить с предыдущим',
+  diffExit: 'Выйти из сравнения',
+  diffNew: 'Новые',
+  diffFixed: 'Исправлено',
+  diffUnchanged: 'Без изменений',
+  diffSummary: (nNew, nFixed, nUnchanged) => `${nNew} новых, ${nFixed} исправлено, ${nUnchanged} без изменений`,
 };
 
 const exportEn: ExportReportStrings = {
