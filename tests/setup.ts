@@ -32,6 +32,10 @@ const chromeMock = {
   scripting: {
     executeScript: jest.fn().mockResolvedValue([]),
   },
+  action: {
+    setBadgeText: jest.fn(),
+    setBadgeBackgroundColor: jest.fn(),
+  },
   devtools: {
     inspectedWindow: { tabId: 1 },
     panels: {

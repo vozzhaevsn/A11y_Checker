@@ -66,7 +66,7 @@ class BackgroundScript {
 
         switch (request.action) {
           case 'saveScanResult':
-            this.handleSaveScanResult(request.payload as ScanResult)
+            this.handleSaveScanResult(request.payload as ScanResult, sender.tab?.id)
               .then(() => sendResponse({ success: true }))
               .catch((error) => {
                 this.logger.error('Failed to save scan result:', error);
@@ -125,6 +125,15 @@ class BackgroundScript {
             return true;
           }
 
+          case 'getAllScans':
+            this.handleGetAllScans()
+              .then((results) => sendResponse({ success: true, results }))
+              .catch((error) => {
+                this.logger.error('Failed to get all scans:', error);
+                sendResponse({ success: false, error: String(error) });
+              });
+            return true;
+
           default:
             this.logger.warn('Unknown action:', request.action);
             sendResponse({ success: false, error: 'Unknown action' });
@@ -134,11 +143,28 @@ class BackgroundScript {
     );
   }
 
-  private async handleSaveScanResult(result: ScanResult): Promise<void> {
+  private async handleSaveScanResult(result: ScanResult, tabId?: number): Promise<void> {
     const data = await this.getStorageData();
     data.scanResults = [result, ...data.scanResults].slice(0, 50);
     await chrome.storage.local.set({ a11yCheckerData: data });
     this.logger.info('Scan result saved', { id: result.id, url: result.url });
+    this.updateBadge(result, tabId);
+  }
+
+  private updateBadge(result: ScanResult, tabId?: number): void {
+    const critical = result.summary.critical;
+    const serious = result.summary.serious;
+    const text = critical > 0 ? String(critical) : serious > 0 ? String(serious) : '';
+    const color = critical > 0 ? '#d93025' : serious > 0 ? '#f29900' : '#65a30d';
+    const badgeOptions = tabId !== undefined ? { text, tabId } : { text };
+    const colorOptions = tabId !== undefined ? { color, tabId } : { color };
+    chrome.action.setBadgeText(badgeOptions);
+    chrome.action.setBadgeBackgroundColor(colorOptions);
+  }
+
+  private async handleGetAllScans(): Promise<ScanResult[]> {
+    const data = await this.getStorageData();
+    return data.scanResults;
   }
 
   private async handleGetLastScan(): Promise<ScanResult | null> {
