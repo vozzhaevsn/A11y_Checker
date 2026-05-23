@@ -23,6 +23,5 @@ module.exports = {
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/scripts/devtools.ts',
-    '!src/ui/devtools-panel.ts',
   ],
 };
