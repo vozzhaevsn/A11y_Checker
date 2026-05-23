@@ -13,7 +13,7 @@ Chrome-расширение (Manifest V3) для автоматической п
 | Язык | TypeScript 5.0+ |
 | Сборка | Webpack 5 |
 | Тесты | Jest 29 + ts-jest + jsdom |
-| Движок a11y | axe-core 4.8.0 |
+| Движок a11y | axe-core 4.11.4 |
 | API расширения | Chrome MV3, webextension-polyfill |
 | Линтинг | ESLint 9 + @typescript-eslint |
 
@@ -56,6 +56,10 @@ popup.ts ──→ background.ts (SW) ──→ content-script.ts
 | 2.1.1 (A) — Клавиатурная навигация | custom | KeyboardChecker |
 | 2.4.7 (AA) — Видимый фокус | custom | KeyboardChecker |
 | 2.4.2 (A) — Заголовок страницы | custom | SemanticChecker |
+| 2.4.1 (A) — Пропуск блоков (skip-link) | custom | SemanticChecker |
+| 2.3.3 (AAA) — Анимация (reduced motion) | custom | SemanticChecker |
+| 3.1.1 (A) — Язык страницы (lang) | custom | SemanticChecker |
+| 4.1.2 (A) — ARIA атрибуты | custom | SemanticChecker |
 | 4.1.2 (A) + 80+ правил | axe-core | AxeEngine |
 
 ---
@@ -96,7 +100,7 @@ interface Settings {
   includeKeyboard: boolean;
   includeSemantics: boolean;
   autoScanOnLoad: boolean;
-  theme: 'light' | 'dark';   // ⚠️ не реализовано в UI
+  theme: 'light' | 'dark';
 }
 ```
 
@@ -126,8 +130,8 @@ interface Settings {
 
 ## Тесты
 
-- **11 файлов**, **83 теста**, покрытие **86.1%**
-- Исключены из покрытия: devtools-panel файлы
+- **13 файлов**, **106 тестов**, **13 suites**
+- Исключены из покрытия: `devtools.ts`
 - Среда: jsdom (симуляция DOM)
 
 ---
@@ -136,11 +140,10 @@ interface Settings {
 
 | Проблема | Статус |
 |---------|--------|
-| `theme: 'dark'` в Settings — не реализовано в UI | Не сделано |
-| `autoScanOnLoad` — не реализовано в UI | Не сделано |
-| DevTools-панель исключена из тестов | Техдолг |
-| VKR-директория в репо (академический документ) | Не влияет на работу |
-| manifest.json ссылается на JS-файлы из `src/` (не `dist/`) | Требует проверки |
+| Пагинация списка проблем (>50 issues) | Не сделано (Этап 4) |
+| Инкрементальное сканирование | Не сделано (Этап 4) |
+| Web Worker для axe-core | Не сделано (Этап 4) |
+| Diff двух сканирований | Не сделано (Этап 4) |
 
 ---
 
