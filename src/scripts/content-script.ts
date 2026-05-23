@@ -14,10 +14,31 @@ class ContentScript {
     this.scanner = new Scanner(this.settings);
     this.setupMessageListener();
     this.logger.info('Content script initialized');
+    void this.autoScanIfEnabled();
   }
 
   private getDefaultSettings(): Settings {
     return createDefaultSettings();
+  }
+
+  private async autoScanIfEnabled(): Promise<void> {
+    try {
+      const response = await chrome.runtime.sendMessage({ action: 'getSettings' });
+      if (response?.success && response.settings) {
+        this.settings = response.settings as Settings;
+        this.scanner = new Scanner(this.settings);
+      }
+    } catch {
+      /* use defaults */
+    }
+
+    if (!this.settings.autoScanOnLoad) return;
+
+    if (document.readyState === 'complete') {
+      await this.performScan();
+    } else {
+      window.addEventListener('load', () => void this.performScan(), { once: true });
+    }
   }
 
   private setupMessageListener(): void {
