@@ -167,20 +167,6 @@ class ExportUtil {
 }
 ```
 
-### `StorageUtil` — `src/utils/storage.ts`
-
-```typescript
-class StorageUtil {
-  saveScanResult(result: ScanResult): Promise<void>;
-  getAllScanResults(): Promise<ScanResult[]>;
-  getScanResultById(id: string): Promise<ScanResult | null>;
-  deleteScanResult(id: string): Promise<void>;
-  clearAllScanResults(): Promise<void>;
-  saveSettings(settings: Settings): Promise<void>;
-  getSettings(): Promise<Settings>;
-}
-```
-
 ### `Logger` — `src/utils/logger.ts`
 
 ```typescript

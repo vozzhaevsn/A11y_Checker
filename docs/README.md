@@ -10,8 +10,13 @@ Automated accessibility checker for web pages — a Chrome extension (Manifest V
 - **Export reports** — JSON, HTML, or CSV with one click
 - **DevTools panel** — deeper analysis inside Chrome DevTools
 - **Element highlighting** — click any issue to scroll to and highlight the element on the page
-- **Settings** — toggle individual check categories on/off
-- **History** — last 50 scan results stored in `chrome.storage.local`
+- **Settings** — toggle individual check categories, language (EN/RU), dark/light theme
+- **History** — last 50 scan results stored in `chrome.storage.local`, with history tab
+- **Dark theme** — CSS custom properties with manual toggle
+- **Auto-scan** — automatically scan on page load (configurable)
+- **Extension badge** — critical/serious issue count on toolbar icon
+- **WCAG criterion filter** — filter issues by specific WCAG criteria
+- **Group by element** — issues grouped by CSS selector to reduce visual clutter
 
 ## Quick Start
 
@@ -35,7 +40,7 @@ src/
 ├── checkers/        # ContrastChecker, ImageChecker, SemanticChecker, KeyboardChecker
 ├── scripts/         # content-script.ts, background.ts, devtools.ts
 ├── ui/              # popup.html/css/ts, devtools-panel.html/ts
-└── utils/           # Logger, StorageUtil, ExportUtil
+└── utils/           # Logger, ExportUtil, settings-defaults
 ```
 
 | Component | Role |
@@ -57,7 +62,10 @@ src/
 | Form labels | 1.3.1 (A), 3.3.2 (AA) | Serious |
 | Keyboard access | 2.1.1 (A) | Serious |
 | Focus indicators | 2.4.7 (AA) | Moderate |
-| ARIA validation | 4.1.2 (A) | via axe-core |
+| Skip-link | 2.4.1 (A) | Moderate |
+| Page language | 3.1.1 (A) | Serious |
+| Reduced motion | 2.3.3 (AAA) | Minor |
+| ARIA attributes | 4.1.2 (A) | Serious |
 
 Plus 80+ additional checks provided by axe-core.
 
@@ -68,12 +76,12 @@ npm test            # run tests with coverage
 npm run test:watch  # watch mode
 ```
 
-**Coverage: 88%+ statements, 90%+ lines** across 78 tests.
+**Coverage: 86%+** across 106 tests in 13 suites.
 
 ## Tech Stack
 
 - TypeScript 5+, Webpack 5, Chrome Extension Manifest V3
-- axe-core 4.8+
+- axe-core 4.11+
 - Jest + ts-jest + jsdom for testing
 
 ## License
