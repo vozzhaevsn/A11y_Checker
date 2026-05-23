@@ -1,8 +1,8 @@
 # PROGRESS — A11y Checker Pro
 
-## Статус: ✅ Этап 4 — Производительность
+## Статус: ✅ Все этапы завершены (Stages 0–5)
 
-Проект находится в состоянии завершённых Stages 0–4.
+Проект готов к публикации в Chrome Web Store.
 
 ---
 
@@ -58,6 +58,14 @@
 - [x] T-404: Bundle optimization — lazy import axe-core, content-script.js 678KB→122KB (82%)
 - [x] T-405: Scan diff — сравнение с предыдущим сканом того же URL, new/fixed/unchanged
 
+### Stage 5 — Публикация (2026-05-23)
+
+- [x] CHANGELOG обновлён (Stages 3–4)
+- [x] Версия 1.0.0 → 1.2.0 (manifest.json, package.json, popup footer)
+- [x] Store listing EN/RU с privacy disclosure (`docs/store-listing.md`)
+- [x] GitHub Actions release workflow (tag `v*` → build → zip → Release)
+- [x] `npm run zip` для локальной упаковки
+
 ---
 
 ## Этапы по плану
@@ -69,7 +77,7 @@
 | Этап 2 | UX-улучшения | ✅ Завершён |
 | Этап 3 | Расширение проверок | ✅ Завершён |
 | Этап 4 | Производительность | ✅ Завершён |
-| Этап 5 | Публикация | 🔲 Не начат |
+| Этап 5 | Публикация | ✅ Завершён |
 
 ---
 
@@ -77,6 +85,7 @@
 
 | Дата | Изменение |
 |------|-----------|
+| 2026-05-23 | Stage 5 завершён: CHANGELOG, версия 1.2.0, store listing EN/RU, release workflow, npm run zip |
 | 2026-05-23 | Stage 4 завершён: пагинация, DOM watch, lazy axe-core (678→122KB), scan diff |
 | 2026-05-23 | Stage 3 завершён: axe-core обновлён 4.8.0→4.11.4, все 6 задач готовы, документация синхронизирована |
 | 2026-05-23 | Stage 3: lang, skip-links, prefers-reduced-motion, ARIA, улучшен tabindex — добавлены в SemanticChecker + 13 новых тестов |

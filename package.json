@@ -1,6 +1,6 @@
 {
   "name": "a11y-checker-pro",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Browser extension for automated accessibility checking based on WCAG standards",
   "main": "index.js",
   "scripts": {
@@ -11,6 +11,7 @@
     "lint": "eslint src/",
     "start": "npm run build:dev",
     "clean": "rm -rf dist",
+    "zip": "npm run build && cd dist && zip -r ../a11y-checker-pro.zip ./*",
     "prepare": "husky"
   },
   "keywords": [
@@ -26,7 +27,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "axe-core": "^4.8.0"
+    "axe-core": "^4.11.4"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.250",

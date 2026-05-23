@@ -147,7 +147,17 @@
 
 ---
 
-## ЭТАП 5 — Публикация 🔲
+## ЭТАП 5 — Публикация ✅ (2/2)
 
-### T-501: Подготовить Chrome Web Store материалы `[ ]`
-### T-502: Автоматический release через GitHub Actions `[ ]`
+### T-501: Подготовить Chrome Web Store материалы `[x]`
+- Store listing EN + RU (short + detailed description, feature list, privacy disclosure)
+- Privacy policy justification for each permission
+- Version bump 1.0.0 → 1.2.0 (manifest.json, package.json, popup footer)
+- CHANGELOG updated with Stage 3 and Stage 4 entries
+- **Файлы:** `docs/store-listing.md`, `CHANGELOG.md`, `manifest.json`, `package.json`, `src/ui/popup.html`
+
+### T-502: Автоматический release через GitHub Actions `[x]`
+- Workflow: push tag `v*` → lint → test → build → zip → GitHub Release
+- `npm run zip` script for local packaging
+- Uses `softprops/action-gh-release@v2` for release creation
+- **Файлы:** `.github/workflows/release.yml`, `package.json`

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "A11y Checker Pro",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Automated accessibility checker for web pages based on WCAG 2.1 standards with axe-core engine",
 
   "icons": {
