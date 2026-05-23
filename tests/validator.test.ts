@@ -26,19 +26,15 @@ describe('Validator', () => {
       expect(validator.validateWcagCompliance([], 'AA')).toBe(true);
     });
 
-    it('returns false for critical issues at any level', () => {
-      expect(validator.validateWcagCompliance([makeIssue('critical')], 'A')).toBe(false);
+    it.each([
+      ['critical', 'A'],
+      ['serious', 'A'],
+    ] as const)('returns false for %s issues at any level', (impact, level) => {
+      expect(validator.validateWcagCompliance([makeIssue(impact)], level)).toBe(false);
     });
 
-    it('returns false for serious issues at any level', () => {
-      expect(validator.validateWcagCompliance([makeIssue('serious')], 'A')).toBe(false);
-    });
-
-    it('returns false for moderate issues at AA', () => {
+    it('returns false for moderate at AA but allows minor', () => {
       expect(validator.validateWcagCompliance([makeIssue('moderate')], 'AA')).toBe(false);
-    });
-
-    it('allows minor issues at AA', () => {
       expect(validator.validateWcagCompliance([makeIssue('minor')], 'AA')).toBe(true);
     });
 
@@ -62,26 +58,11 @@ describe('Validator', () => {
       expect(validator.validateSettings(settings)).toBe(true);
     });
 
-    it('rejects null settings', () => {
+    it('rejects null, invalid wcagLevel, invalid theme, invalid locale', () => {
       expect(validator.validateSettings(null as unknown as Settings)).toBe(false);
-    });
-
-    it('rejects invalid wcagLevel', () => {
-      expect(
-        validator.validateSettings({ wcagLevel: 'X' as 'A', theme: 'light' } as Settings),
-      ).toBe(false);
-    });
-
-    it('rejects invalid theme', () => {
-      expect(
-        validator.validateSettings({ wcagLevel: 'AA', theme: 'blue' as 'light' } as Settings),
-      ).toBe(false);
-    });
-
-    it('rejects invalid locale', () => {
-      expect(
-        validator.validateSettings({ wcagLevel: 'AA', locale: 'fr' as 'en', theme: 'light' } as Settings),
-      ).toBe(false);
+      expect(validator.validateSettings({ wcagLevel: 'X' as 'A', theme: 'light' } as Settings)).toBe(false);
+      expect(validator.validateSettings({ wcagLevel: 'AA', theme: 'blue' as 'light' } as Settings)).toBe(false);
+      expect(validator.validateSettings({ wcagLevel: 'AA', locale: 'fr' as 'en', theme: 'light' } as Settings)).toBe(false);
     });
   });
 
@@ -98,25 +79,14 @@ describe('Validator', () => {
       expect(validator.validateScanResults(result)).toBe(true);
     });
 
-    it('rejects null', () => {
+    it('rejects null, missing properties, and non-array issues', () => {
       expect(validator.validateScanResults(null)).toBe(false);
-    });
-
-    it('rejects missing properties', () => {
       expect(validator.validateScanResults({ id: 'test' })).toBe(false);
-    });
-
-    it('rejects non-array issues', () => {
-      expect(
-        validator.validateScanResults({
-          id: 'test',
-          url: 'https://example.com',
-          timestamp: 123,
-          summary: { total: 0, critical: 0, serious: 0, moderate: 0, minor: 0 },
-          issues: 'not-array',
-          wcagLevel: 'AA',
-        }),
-      ).toBe(false);
+      expect(validator.validateScanResults({
+        id: 'test', url: 'https://example.com', timestamp: 123,
+        summary: { total: 0, critical: 0, serious: 0, moderate: 0, minor: 0 },
+        issues: 'not-array', wcagLevel: 'AA',
+      })).toBe(false);
     });
   });
 });

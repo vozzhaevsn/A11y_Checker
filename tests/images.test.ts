@@ -9,7 +9,6 @@ describe('ImageChecker', () => {
 
   it('detects images without alt attribute', async () => {
     document.body.innerHTML = '<img src="test.png">';
-
     const issues = await checker.check();
     expect(issues.length).toBe(1);
     expect(issues[0]!.description).toContain('missing alt');
@@ -18,58 +17,27 @@ describe('ImageChecker', () => {
 
   it('passes images with descriptive alt text', async () => {
     document.body.innerHTML = '<img src="test.png" alt="A photo of a sunset">';
-
-    const issues = await checker.check();
-    expect(issues.length).toBe(0);
+    expect((await checker.check()).length).toBe(0);
   });
 
-  it('passes explicitly decorative images with empty alt', async () => {
-    document.body.innerHTML = '<img src="decorative.png" alt="">';
-
-    const issues = await checker.check();
-    expect(issues.length).toBe(0);
+  it.each([
+    ['empty alt (decorative)', '<img src="decorative.png" alt="">'],
+    ['role="presentation"', '<img src="bg.png" role="presentation">'],
+    ['aria-hidden="true"', '<img src="bg.png" aria-hidden="true">'],
+    ['display:none (hidden)', '<img src="test.png" style="display:none">'],
+    ['no images on page', '<p>No images here</p>'],
+  ])('produces no issues for %s', async (_, html) => {
+    document.body.innerHTML = html;
+    expect((await checker.check()).length).toBe(0);
   });
 
-  it('passes images with role="presentation"', async () => {
-    document.body.innerHTML = '<img src="bg.png" role="presentation">';
-
-    const issues = await checker.check();
-    expect(issues.length).toBe(0);
-  });
-
-  it('passes images with aria-hidden="true"', async () => {
-    document.body.innerHTML = '<img src="bg.png" aria-hidden="true">';
-
-    const issues = await checker.check();
-    expect(issues.length).toBe(0);
-  });
-
-  it('flags images with generic alt text', async () => {
-    document.body.innerHTML = '<img src="logo.png" alt="image">';
-
+  it.each([
+    ['generic alt text', '<img src="logo.png" alt="image">', 'suspicious'],
+    ['filename as alt', '<img src="photo.png" alt="photo.jpg">', undefined],
+  ])('flags images with %s', async (_, html, descContains) => {
+    document.body.innerHTML = html;
     const issues = await checker.check();
     expect(issues.length).toBe(1);
-    expect(issues[0]!.description).toContain('suspicious');
-  });
-
-  it('flags images with filename as alt text', async () => {
-    document.body.innerHTML = '<img src="photo.png" alt="photo.jpg">';
-
-    const issues = await checker.check();
-    expect(issues.length).toBe(1);
-  });
-
-  it('returns empty for no images on page', async () => {
-    document.body.innerHTML = '<p>No images here</p>';
-
-    const issues = await checker.check();
-    expect(issues.length).toBe(0);
-  });
-
-  it('skips hidden images', async () => {
-    document.body.innerHTML = '<img src="test.png" style="display:none">';
-
-    const issues = await checker.check();
-    expect(issues.length).toBe(0);
+    if (descContains) expect(issues[0]!.description).toContain(descContains);
   });
 });
