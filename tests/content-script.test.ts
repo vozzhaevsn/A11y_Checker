@@ -6,6 +6,7 @@ describe('ContentScript autoScanOnLoad', () => {
   });
 
   it('does not auto-scan when autoScanOnLoad is false', async () => {
+    // Configure mock BEFORE resetModules+import so the IIFE sees the right mock
     mockSendMessage.mockResolvedValue({
       success: true,
       settings: {
@@ -27,7 +28,7 @@ describe('ContentScript autoScanOnLoad', () => {
   });
 
   it('triggers scan when autoScanOnLoad is true and document is complete', async () => {
-    // Mock getSettings response
+    // Configure mock BEFORE resetModules+import so the IIFE sees the right mock
     mockSendMessage.mockImplementation((msg: { action: string }) => {
       if (msg.action === 'getSettings') {
         return Promise.resolve({
@@ -49,8 +50,7 @@ describe('ContentScript autoScanOnLoad', () => {
     await import('../src/scripts/content-script');
     await new Promise((r) => setTimeout(r, 100));
 
-    // performScan calls sendMessage with action 'saveScanResult' or triggers scan messaging
-    // At minimum, getSettings was called
+    // At minimum, getSettings was called (by autoScanIfEnabled and/or performScan)
     const settingsCalls = mockSendMessage.mock.calls.filter(
       (c: unknown[]) => (c[0] as { action: string }).action === 'getSettings'
     );
