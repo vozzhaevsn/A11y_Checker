@@ -10,6 +10,7 @@ export function createDefaultSettings(): Settings {
     includeKeyboard: true,
     includeSemantics: true,
     autoScanOnLoad: false,
+    watchDomChanges: false,
     theme: 'light',
   };
 }

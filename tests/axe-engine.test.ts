@@ -26,6 +26,7 @@ describe('AxeEngine', () => {
     includeKeyboard: true,
     includeSemantics: true,
     autoScanOnLoad: false,
+    watchDomChanges: false,
     theme: 'light',
   };
 

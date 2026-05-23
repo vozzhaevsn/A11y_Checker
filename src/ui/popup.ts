@@ -32,6 +32,7 @@ class PopupUI {
   private settingSemantics!: HTMLInputElement;
   private settingKeyboard!: HTMLInputElement;
   private settingAutoScan!: HTMLInputElement;
+  private settingWatchDom!: HTMLInputElement;
   private settingTheme!: HTMLInputElement;
   private settingsSave!: HTMLButtonElement;
   private settingsCancel!: HTMLButtonElement;
@@ -91,6 +92,7 @@ class PopupUI {
     this.settingSemantics = document.getElementById('setting-semantics') as HTMLInputElement;
     this.settingKeyboard = document.getElementById('setting-keyboard') as HTMLInputElement;
     this.settingAutoScan = document.getElementById('setting-auto-scan') as HTMLInputElement;
+    this.settingWatchDom = document.getElementById('setting-watch-dom') as HTMLInputElement;
     this.settingTheme = document.getElementById('setting-theme') as HTMLInputElement;
     this.settingsSave = document.getElementById('settings-save') as HTMLButtonElement;
     this.settingsCancel = document.getElementById('settings-cancel') as HTMLButtonElement;
@@ -271,6 +273,7 @@ class PopupUI {
         this.settingSemantics.checked = s.includeSemantics;
         this.settingKeyboard.checked = s.includeKeyboard;
         this.settingAutoScan.checked = s.autoScanOnLoad;
+        this.settingWatchDom.checked = s.watchDomChanges;
         this.settingTheme.checked = s.theme === 'dark';
         this.applyTheme(s.theme ?? 'light');
         this.applyPopupUi();
@@ -322,6 +325,7 @@ class PopupUI {
     this.settingLocaleLabel.textContent = ui.settingLocaleLabel;
     (document.getElementById('setting-theme-label') as HTMLElement).textContent = ui.settingTheme;
     (document.getElementById('setting-auto-scan-label') as HTMLElement).textContent = ui.settingAutoScan;
+    (document.getElementById('setting-watch-dom-label') as HTMLElement).textContent = ui.settingWatchDom;
     (document.querySelector('label[for="setting-contrast"]') as HTMLElement).textContent = ui.settingContrast;
     (document.querySelector('label[for="setting-images"]') as HTMLElement).textContent = ui.settingImages;
     (document.querySelector('label[for="setting-semantics"]') as HTMLElement).textContent = ui.settingSemantics;
@@ -351,6 +355,7 @@ class PopupUI {
       includeSemantics: this.settingSemantics.checked,
       includeKeyboard: this.settingKeyboard.checked,
       autoScanOnLoad: this.settingAutoScan.checked,
+      watchDomChanges: this.settingWatchDom.checked,
       theme,
     };
     await this.updateRemoteSettings(partial);

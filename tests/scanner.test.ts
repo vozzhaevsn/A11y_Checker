@@ -27,6 +27,7 @@ describe('Scanner', () => {
     includeKeyboard: true,
     includeSemantics: true,
     autoScanOnLoad: false,
+    watchDomChanges: false,
     theme: 'light',
   };
 

@@ -50,6 +50,7 @@ export interface PopupUiStrings {
   wcagCriterionFilter: string;
   wcagCriterionAll: string;
   settingAutoScan: string;
+  settingWatchDom: string;
   settingTheme: string;
   diffCompare: string;
   diffExit: string;
@@ -144,6 +145,7 @@ const popupEn: PopupUiStrings = {
   wcagCriterionFilter: 'Criterion',
   wcagCriterionAll: 'All',
   settingAutoScan: 'Auto-scan on page load',
+  settingWatchDom: 'Auto-rescan on DOM changes',
   settingTheme: 'Dark theme',
   diffCompare: 'Compare with previous',
   diffExit: 'Exit diff',
@@ -201,6 +203,7 @@ const popupRu: PopupUiStrings = {
   wcagCriterionFilter: 'Критерий',
   wcagCriterionAll: 'Все',
   settingAutoScan: 'Автосканирование при загрузке',
+  settingWatchDom: 'Автопересканирование при изменении DOM',
   settingTheme: 'Тёмная тема',
   diffCompare: 'Сравнить с предыдущим',
   diffExit: 'Выйти из сравнения',

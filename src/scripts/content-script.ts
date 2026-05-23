@@ -7,6 +7,11 @@ class ContentScript {
   private scanner: Scanner;
   private logger: Logger;
   private settings: Settings;
+  private domObserver: MutationObserver | null = null;
+  private domDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private autoScanCount: number = 0;
+  private static readonly MAX_AUTO_SCANS = 5;
+  private static readonly DOM_DEBOUNCE_MS = 2000;
 
   constructor() {
     this.logger = new Logger('ContentScript');
@@ -32,12 +37,56 @@ class ContentScript {
       /* use defaults */
     }
 
+    if (this.settings.watchDomChanges) {
+      this.setupDomWatcher();
+    }
+
     if (!this.settings.autoScanOnLoad) return;
 
     if (document.readyState === 'complete') {
       await this.performScan();
     } else {
       window.addEventListener('load', () => void this.performScan(), { once: true });
+    }
+  }
+
+  private scheduleAutoScan(): void {
+    if (this.domDebounceTimer) clearTimeout(this.domDebounceTimer);
+    this.domDebounceTimer = setTimeout(() => {
+      this.domDebounceTimer = null;
+      if (this.autoScanCount >= ContentScript.MAX_AUTO_SCANS) {
+        this.logger.info('Max auto-scans reached, stopping DOM watcher');
+        this.teardownDomWatcher();
+        return;
+      }
+      this.autoScanCount++;
+      this.logger.info(`DOM change detected, auto-scanning (${this.autoScanCount}/${ContentScript.MAX_AUTO_SCANS})`);
+      void this.performScan();
+    }, ContentScript.DOM_DEBOUNCE_MS);
+  }
+
+  private setupDomWatcher(): void {
+    if (this.domObserver) return;
+    this.domObserver = new MutationObserver(() => {
+      this.scheduleAutoScan();
+    });
+    this.domObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+    });
+    this.logger.info('DOM watcher started');
+  }
+
+  private teardownDomWatcher(): void {
+    if (this.domDebounceTimer) {
+      clearTimeout(this.domDebounceTimer);
+      this.domDebounceTimer = null;
+    }
+    if (this.domObserver) {
+      this.domObserver.disconnect();
+      this.domObserver = null;
+      this.logger.info('DOM watcher stopped');
     }
   }
 
@@ -66,6 +115,11 @@ class ContentScript {
             if (request.settings) {
               this.settings = { ...this.settings, ...request.settings };
               this.scanner = new Scanner(this.settings);
+              if (this.settings.watchDomChanges) {
+                this.setupDomWatcher();
+              } else {
+                this.teardownDomWatcher();
+              }
             }
             sendResponse({ success: true });
             return true;
@@ -116,6 +170,13 @@ class ContentScript {
     }
 
     this.logger.info(`Scan completed. Found ${result.summary.total} issues`);
+
+    /* Restart DOM watcher with fresh counter after a full scan completes */
+    this.autoScanCount = 0;
+    if (this.settings.watchDomChanges) {
+      this.setupDomWatcher();
+    }
+
     return result;
   }
 

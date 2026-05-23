@@ -23,6 +23,8 @@ export interface Settings {
   includeKeyboard: boolean;
   includeSemantics: boolean;
   autoScanOnLoad: boolean;
+  /** When true, re-scans page after DOM changes settle (2s debounce, max 5 auto-scans) */
+  watchDomChanges: boolean;
   theme: 'light' | 'dark';
 }
 

@@ -53,6 +53,7 @@ describe('Validator', () => {
         includeKeyboard: true,
         includeSemantics: true,
         autoScanOnLoad: false,
+        watchDomChanges: false,
         theme: 'light',
       };
       expect(validator.validateSettings(settings)).toBe(true);
