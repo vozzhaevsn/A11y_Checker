@@ -15,6 +15,7 @@ module.exports = (env, argv) => {
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: '[name].js',
+      chunkFilename: 'src/scripts/[name].[contenthash:8].js',
       clean: true,
     },
     devtool: isProd ? false : 'cheap-module-source-map',

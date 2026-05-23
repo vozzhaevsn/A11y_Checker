@@ -1,8 +1,17 @@
-import axe from 'axe-core';
 import type { AxeResults, Locale, RunOptions } from 'axe-core';
 import ruLocale from 'axe-core/locales/ru.json';
 import { AxeCoreResult, Settings } from '../types';
 import { Logger } from '../utils/logger';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let axeInstance: any = null;
+
+async function getAxe(): Promise<any> {
+  if (!axeInstance) {
+    axeInstance = (await import('axe-core' /* webpackChunkName: "axe-core" */)).default;
+  }
+  return axeInstance;
+}
 
 /**
  * Russian locale JSON includes failureSummaries with doT templates ({{...}}).
@@ -27,6 +36,7 @@ export class AxeEngine {
     try {
       this.logger.info('Starting axe-core scan');
 
+      const axe = await getAxe();
       axe.reset();
       if (settings.locale === 'ru') {
         axe.configure({ locale: russianAxeLocaleSafeForCsp() });
@@ -78,7 +88,9 @@ export class AxeEngine {
   }
 
   reset(): void {
-    axe.reset();
-    this.logger.info('Axe engine reset to default configuration');
+    if (axeInstance) {
+      axeInstance.reset();
+      this.logger.info('Axe engine reset to default configuration');
+    }
   }
 }
