@@ -489,7 +489,7 @@ class PopupUI {
 
   private buildIssueCard(issue: AccessibilityIssue, selector: string): HTMLElement {
     const item = document.createElement('div');
-    item.className = `issue-item ${issue.impact}`;
+    item.className = `issue-item ${this.escapeHtml(issue.impact)}`;
 
     const ui = getPopupUi(this.uiLocale);
     const impactLabel = getImpactLabel(this.uiLocale, issue.impact as ImpactKey);
@@ -501,7 +501,7 @@ class PopupUI {
     item.innerHTML = `
       <div class="issue-header">
         <span class="issue-description">${this.escapeHtml(issue.description)}</span>
-        <span class="issue-impact ${issue.impact}">${this.escapeHtml(impactLabel)}</span>
+        <span class="issue-impact ${this.escapeHtml(issue.impact)}">${this.escapeHtml(impactLabel)}</span>
       </div>
       <div class="issue-element">&lt;${this.escapeHtml(issue.element.tagName)}${
         issue.element.id ? ` id="${this.escapeHtml(issue.element.id)}"` : ''

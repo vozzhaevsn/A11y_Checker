@@ -28,5 +28,3 @@ export class Logger {
     }
   }
 }
-const x = 1;
-// test
