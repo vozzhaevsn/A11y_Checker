@@ -149,7 +149,7 @@ export class ContrastChecker {
     return [255, 255, 255, 1];
   }
 
-  parseColor(color: string): [number, number, number, number] {
+  private parseColor(color: string): [number, number, number, number] {
     if (color.startsWith('#')) {
       const hex = color.slice(1);
       if (hex.length === 3) {
@@ -183,7 +183,7 @@ export class ContrastChecker {
     return [0, 0, 0, 1];
   }
 
-  calculateContrastRatio(
+  private calculateContrastRatio(
     color1: [number, number, number, number],
     color2: [number, number, number, number],
   ): number {
@@ -196,7 +196,7 @@ export class ContrastChecker {
     return (lighter + 0.05) / (darker + 0.05);
   }
 
-  relativeLuminance(color: [number, number, number, number]): number {
+  private relativeLuminance(color: [number, number, number, number]): number {
     const [r, g, b] = color;
 
     const RsRGB = r / 255;
