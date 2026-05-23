@@ -2,6 +2,15 @@ import { AccessibilityIssue, ElementInfo } from '../types';
 import { Logger } from '../utils/logger';
 import type { AppLocale } from '../i18n/locale';
 import {
+  brokenAriaLabelledByDescription,
+  brokenAriaLabelledByFix,
+  brokenAriaLabelledByHelp,
+  emptyAriaLabelDescription,
+  emptyAriaLabelFix,
+  emptyAriaLabelHelp,
+  emptyLangDescription,
+  emptyLangFix,
+  emptyLangHelp,
   formLabelDescription,
   formLabelFix,
   formLabelHelp,
@@ -14,6 +23,15 @@ import {
   missingLandmarkDescription,
   missingLandmarkFix,
   missingLandmarkHelp,
+  missingLangDescription,
+  missingSkipLinkDescription,
+  missingSkipLinkFix,
+  missingSkipLinkHelp,
+  noReducedMotionDescription,
+  noReducedMotionFix,
+  noReducedMotionHelp,
+  missingLangFix,
+  missingLangHelp,
   missingTitleDescription,
   missingTitleFix,
   missingTitleHelp,
@@ -36,9 +54,13 @@ export class SemanticChecker {
       const issues: AccessibilityIssue[] = [];
 
       issues.push(...this.checkPageTitle(locale));
+      issues.push(...this.checkPageLang(locale));
       issues.push(...this.checkHeadings(locale));
       issues.push(...this.checkLandmarks(locale));
       issues.push(...this.checkFormLabels(locale));
+      issues.push(...this.checkSkipLinks(locale));
+      issues.push(...this.checkAriaAttributes(locale));
+      issues.push(...this.checkReducedMotion(locale));
 
       this.logger.info(`Semantic check completed. Found ${issues.length} issues.`);
       return issues;
@@ -67,6 +89,55 @@ export class SemanticChecker {
       ];
     }
     return [];
+  }
+
+  private checkReducedMotion(locale: AppLocale): AccessibilityIssue[] {
+    const allCss = this.collectAllStylesheetText();
+
+    if (!allCss) return [];
+
+    const hasReducedMotion = /prefers-reduced-motion/.test(allCss);
+    if (hasReducedMotion) return [];
+
+    const hasAnimations = /(@keyframes|animation\s*:|transition\s*:)/.test(allCss);
+    if (!hasAnimations) return [];
+
+    return [{
+      id: `no-reduced-motion-${Date.now()}`,
+      element: this.bodyInfo(),
+      description: noReducedMotionDescription(locale, 1),
+      help: noReducedMotionHelp(locale),
+      helpUrl: 'https://www.w3.org/WAI/WCAG21/Understanding/animation-from-interactions.html',
+      impact: 'minor',
+      tags: ['cat.sensory', 'wcag2aaa', 'wcag233'],
+      wcagLevels: ['AAA'],
+      wcagCriteria: ['2.3.3'],
+      fixSuggestions: noReducedMotionFix(locale),
+    }];
+  }
+
+  private collectAllStylesheetText(): string {
+    const parts: string[] = [];
+
+    try {
+      Array.from(document.styleSheets).forEach((sheet) => {
+        try {
+          Array.from(sheet.cssRules || []).forEach((rule) => {
+            parts.push(rule.cssText);
+          });
+        } catch {
+          /* cross-origin stylesheet — skip */
+        }
+      });
+    } catch {
+      /* stylesheet access may be restricted */
+    }
+
+    document.querySelectorAll('style').forEach((el) => {
+      parts.push(el.textContent ?? '');
+    });
+
+    return parts.join('\n');
   }
 
   private checkHeadings(locale: AppLocale): AccessibilityIssue[] {
@@ -192,6 +263,136 @@ export class SemanticChecker {
     }
 
     return input.hasAttribute('aria-label') || input.hasAttribute('aria-labelledby');
+  }
+
+  private checkSkipLinks(locale: AppLocale): AccessibilityIssue[] {
+    const navElements = document.querySelectorAll('nav, [role="navigation"], header');
+    if (navElements.length === 0) return [];
+
+    const focusable = document.querySelectorAll(
+      'a[href], button, input:not([type="hidden"]), select, textarea, [tabindex]',
+    );
+
+    const firstLinks = Array.from(focusable).slice(0, 5);
+    const skipKeywords = /skip|пропустить|перейти\s*к\s*(основному|содерж|глав)/i;
+
+    const hasSkipLink = firstLinks.some((el) => {
+      const href = el.getAttribute('href');
+      if (!href || !href.startsWith('#')) return false;
+      const targetId = href.slice(1);
+      if (!document.getElementById(targetId)) return false;
+      return skipKeywords.test(el.textContent ?? '');
+    });
+
+    if (!hasSkipLink) {
+      return [{
+        id: `missing-skip-link-${Date.now()}`,
+        element: this.bodyInfo(),
+        description: missingSkipLinkDescription(locale),
+        help: missingSkipLinkHelp(locale),
+        helpUrl: 'https://www.w3.org/WAI/WCAG21/Understanding/bypass-blocks.html',
+        impact: 'moderate',
+        tags: ['cat.keyboard', 'wcag2a', 'wcag241'],
+        wcagLevels: ['A'],
+        wcagCriteria: ['2.4.1'],
+        fixSuggestions: missingSkipLinkFix(locale),
+      }];
+    }
+
+    return [];
+  }
+
+  private checkPageLang(locale: AppLocale): AccessibilityIssue[] {
+    const html = document.documentElement;
+    const lang = html.getAttribute('lang');
+
+    if (lang === null) {
+      return [{
+        id: `missing-lang-${Date.now()}`,
+        element: {
+          tagName: 'html',
+          attributes: {},
+          position: { top: 0, right: 0, bottom: 0, left: 0 },
+        },
+        description: missingLangDescription(locale),
+        help: missingLangHelp(locale),
+        helpUrl: 'https://www.w3.org/WAI/WCAG21/Understanding/language-of-page.html',
+        impact: 'serious',
+        tags: ['cat.language', 'wcag2a', 'wcag311'],
+        wcagLevels: ['A'],
+        wcagCriteria: ['3.1.1'],
+        fixSuggestions: missingLangFix(locale),
+      }];
+    }
+
+    if (lang.trim() === '') {
+      return [{
+        id: `empty-lang-${Date.now()}`,
+        element: {
+          tagName: 'html',
+          attributes: { lang: '' },
+          position: { top: 0, right: 0, bottom: 0, left: 0 },
+        },
+        description: emptyLangDescription(locale),
+        help: emptyLangHelp(locale),
+        helpUrl: 'https://www.w3.org/WAI/WCAG21/Understanding/language-of-page.html',
+        impact: 'serious',
+        tags: ['cat.language', 'wcag2a', 'wcag311'],
+        wcagLevels: ['A'],
+        wcagCriteria: ['3.1.1'],
+        fixSuggestions: emptyLangFix(locale),
+      }];
+    }
+
+    return [];
+  }
+
+  private checkAriaAttributes(locale: AppLocale): AccessibilityIssue[] {
+    const issues: AccessibilityIssue[] = [];
+
+    const interactive = document.querySelectorAll(
+      'a, button, input, select, textarea, [role="button"], [role="link"], [role="textbox"], [role="combobox"]',
+    );
+
+    interactive.forEach((el) => {
+      const ariaLabel = el.getAttribute('aria-label');
+      if (ariaLabel !== null && ariaLabel.trim() === '') {
+        issues.push({
+          id: `empty-aria-label-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          element: this.getElementInfo(el),
+          description: emptyAriaLabelDescription(locale, el.tagName.toLowerCase()),
+          help: emptyAriaLabelHelp(locale),
+          helpUrl: 'https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html',
+          impact: 'serious',
+          tags: ['cat.aria', 'wcag2a', 'wcag412'],
+          wcagLevels: ['A'],
+          wcagCriteria: ['4.1.2'],
+          fixSuggestions: emptyAriaLabelFix(locale),
+        });
+      }
+
+      const labelledBy = el.getAttribute('aria-labelledby');
+      if (labelledBy) {
+        const ids = labelledBy.split(/\s+/).filter((id) => id.length > 0);
+        const missing = ids.filter((id) => !document.getElementById(id));
+        if (missing.length > 0) {
+          issues.push({
+            id: `broken-labelledby-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            element: this.getElementInfo(el),
+            description: brokenAriaLabelledByDescription(locale, missing.join(', ')),
+            help: brokenAriaLabelledByHelp(locale),
+            helpUrl: 'https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html',
+            impact: 'serious',
+            tags: ['cat.aria', 'wcag2a', 'wcag412'],
+            wcagLevels: ['A'],
+            wcagCriteria: ['4.1.2'],
+            fixSuggestions: brokenAriaLabelledByFix(locale, missing[0]),
+          });
+        }
+      }
+    });
+
+    return issues;
   }
 
   private bodyInfo(): ElementInfo {

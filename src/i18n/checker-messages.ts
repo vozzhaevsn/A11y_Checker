@@ -231,3 +231,123 @@ export function keyboardSuggestFocusStyle(locale: AppLocale): string[] {
     ? ['Добавьте CSS: элемент:focus { outline: 2px solid #667eea; }']
     : ['Add CSS: element:focus { outline: 2px solid #667eea; }'];
 }
+
+/* ---------- lang attribute (WCAG 3.1.1) ---------- */
+
+export function missingLangDescription(locale: AppLocale): string {
+  return locale === 'ru'
+    ? 'У элемента <html> отсутствует атрибут lang'
+    : '<html> element is missing the lang attribute';
+}
+
+export function missingLangHelp(locale: AppLocale): string {
+  return locale === 'ru'
+    ? 'Атрибут lang помогает скринридерам выбрать правильный голосовой профиль'
+    : 'The lang attribute helps screen readers select the correct voice profile';
+}
+
+export function missingLangFix(locale: AppLocale): string[] {
+  return locale === 'ru'
+    ? ['Добавьте lang="ru" (или соответствующий код языка) к элементу <html>']
+    : ['Add lang="en" (or the appropriate language code) to the <html> element'];
+}
+
+export function emptyLangDescription(locale: AppLocale): string {
+  return locale === 'ru'
+    ? 'Атрибут lang у <html> пустой'
+    : '<html> lang attribute is empty';
+}
+
+export function emptyLangHelp(locale: AppLocale): string {
+  return locale === 'ru'
+    ? 'Пустой lang не позволяет определить язык страницы'
+    : 'An empty lang attribute does not identify the page language';
+}
+
+export function emptyLangFix(locale: AppLocale): string[] {
+  return locale === 'ru'
+    ? ['Укажите корректный код языка, например lang="ru"']
+    : ['Set a valid language code, e.g. lang="en"'];
+}
+
+/* ---------- ARIA attributes ---------- */
+
+export function emptyAriaLabelDescription(locale: AppLocale, tag: string): string {
+  return locale === 'ru'
+    ? `<${tag}> имеет пустой aria-label`
+    : `<${tag}> has an empty aria-label`;
+}
+
+export function emptyAriaLabelHelp(locale: AppLocale): string {
+  return locale === 'ru'
+    ? 'Пустой aria-label не передаёт скринридеру полезной информации'
+    : 'An empty aria-label provides no useful information to screen readers';
+}
+
+export function emptyAriaLabelFix(locale: AppLocale): string[] {
+  return locale === 'ru'
+    ? ['Укажите описательный текст в aria-label или удалите атрибут']
+    : ['Provide descriptive text in aria-label or remove the attribute'];
+}
+
+export function brokenAriaLabelledByDescription(locale: AppLocale, ids: string): string {
+  return locale === 'ru'
+    ? `aria-labelledby ссылается на несуществующий элемент: "${ids}"`
+    : `aria-labelledby references a non-existent element: "${ids}"`;
+}
+
+export function brokenAriaLabelledByHelp(locale: AppLocale): string {
+  return locale === 'ru'
+    ? 'Значение aria-labelledby должно совпадать с id существующего элемента на странице'
+    : 'aria-labelledby value must match the id of an existing element on the page';
+}
+
+export function brokenAriaLabelledByFix(locale: AppLocale, ids: string): string[] {
+  return locale === 'ru'
+    ? [`Добавьте элемент с id="${ids}" или исправьте aria-labelledby`]
+    : [`Add an element with id="${ids}" or fix the aria-labelledby reference`];
+}
+
+/* ---------- skip-link (WCAG 2.4.1) ---------- */
+
+export function missingSkipLinkDescription(locale: AppLocale): string {
+  return locale === 'ru'
+    ? 'На странице нет skip-link (ссылки для пропуска навигации)'
+    : 'Page is missing a skip navigation link';
+}
+
+export function missingSkipLinkHelp(locale: AppLocale): string {
+  return locale === 'ru'
+    ? 'Skip-link позволяет пользователям клавиатуры пропускать повторяющуюся навигацию и переходить к основному контенту'
+    : 'A skip-link lets keyboard users bypass repetitive navigation and jump to the main content';
+}
+
+export function missingSkipLinkFix(locale: AppLocale): string[] {
+  return locale === 'ru'
+    ? ['Добавьте <a href="#main-content">Пропустить навигацию</a> в начало страницы']
+    : ['Add <a href="#main-content">Skip to main content</a> at the top of the page'];
+}
+
+/* ---------- prefers-reduced-motion (WCAG 2.3.3 AAA) ---------- */
+
+export function noReducedMotionDescription(locale: AppLocale, animatedCount: number): string {
+  return locale === 'ru'
+    ? `Найдено ${animatedCount} анимированных элементов, но нет @media (prefers-reduced-motion)`
+    : `Found ${animatedCount} animated elements with no prefers-reduced-motion media query`;
+}
+
+export function noReducedMotionHelp(locale: AppLocale): string {
+  return locale === 'ru'
+    ? 'Пользователи, чувствительные к движению, могут отключить анимации в настройках ОС. Страница должна отключать или уменьшать анимации при prefers-reduced-motion: reduce'
+    : 'Users sensitive to motion can disable animations in OS settings. Pages should disable or reduce animations when prefers-reduced-motion: reduce';
+}
+
+export function noReducedMotionFix(locale: AppLocale): string[] {
+  return locale === 'ru'
+    ? [
+      'Добавьте @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }',
+    ]
+    : [
+      'Add @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }',
+    ];
+}
