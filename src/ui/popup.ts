@@ -194,6 +194,7 @@ class PopupUI {
       this.resultsContainer.style.display = 'none';
       this.summaryContainer.style.display = 'none';
       this.exportActions.style.display = 'none';
+      this.paginationContainer.style.display = 'none';
       this.historyContainer.style.display = 'block';
       void this.renderHistory();
     } else {
@@ -424,7 +425,9 @@ class PopupUI {
 
   private async clearResults(): Promise<void> {
     this.currentResult = null;
+    this.currentPage = 1;
     this.diffBtn.style.display = 'none';
+    this.paginationContainer.style.display = 'none';
     this.summaryContainer.style.display = 'none';
     this.exportActions.style.display = 'none';
     const ui = getPopupUi(this.uiLocale);

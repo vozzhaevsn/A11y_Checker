@@ -10,6 +10,7 @@ class ContentScript {
   private domObserver: MutationObserver | null = null;
   private domDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private autoScanCount: number = 0;
+  private isScanning: boolean = false;
   private static readonly MAX_AUTO_SCANS = 5;
   private static readonly DOM_DEBOUNCE_MS = 2000;
 
@@ -19,6 +20,7 @@ class ContentScript {
     this.scanner = new Scanner(this.settings);
     this.setupMessageListener();
     this.logger.info('Content script initialized');
+    window.addEventListener('beforeunload', () => this.teardownDomWatcher());
     void this.autoScanIfEnabled();
   }
 
@@ -54,6 +56,10 @@ class ContentScript {
     if (this.domDebounceTimer) clearTimeout(this.domDebounceTimer);
     this.domDebounceTimer = setTimeout(() => {
       this.domDebounceTimer = null;
+      if (this.isScanning) {
+        this.logger.info('Scan in progress, skipping auto-scan');
+        return;
+      }
       if (this.autoScanCount >= ContentScript.MAX_AUTO_SCANS) {
         this.logger.info('Max auto-scans reached, stopping DOM watcher');
         this.teardownDomWatcher();
@@ -67,7 +73,20 @@ class ContentScript {
 
   private setupDomWatcher(): void {
     if (this.domObserver) return;
-    this.domObserver = new MutationObserver(() => {
+    this.domObserver = new MutationObserver((mutations) => {
+      /* Ignore mutations caused by our own highlight overlays */
+      const relevant = mutations.filter((m) => {
+        if (m.type === 'childList') {
+          return Array.from(m.addedNodes).some(
+            (n) => n instanceof HTMLElement && !n.hasAttribute('data-a11y-highlight'),
+          ) || m.removedNodes.length > 0;
+        }
+        if (m.type === 'attributes') {
+          return !(m.target instanceof HTMLElement && m.target.hasAttribute('data-a11y-highlight'));
+        }
+        return true;
+      });
+      if (relevant.length === 0) return;
       this.scheduleAutoScan();
     });
     this.domObserver.observe(document.body, {
@@ -148,6 +167,7 @@ class ContentScript {
   }
 
   private async performScan(): Promise<ScanResult> {
+    this.isScanning = true;
     this.logger.info('Starting accessibility scan...');
 
     try {
@@ -177,6 +197,7 @@ class ContentScript {
       this.setupDomWatcher();
     }
 
+    this.isScanning = false;
     return result;
   }
 
