@@ -44,6 +44,9 @@ export interface PopupUiStrings {
   historyEmpty: string;
   copySelector: string;
   copiedSelector: string;
+  paginationPrev: string;
+  paginationNext: string;
+  paginationPage: (current: number, total: number) => string;
   wcagCriterionFilter: string;
   wcagCriterionAll: string;
   settingAutoScan: string;
@@ -129,6 +132,9 @@ const popupEn: PopupUiStrings = {
   historyEmpty: 'No scan history yet.',
   copySelector: 'Copy selector',
   copiedSelector: 'Copied!',
+  paginationPrev: '\u2190 Prev',
+  paginationNext: 'Next \u2192',
+  paginationPage: (current, total) => `Page ${current} of ${total}`,
   wcagCriterionFilter: 'Criterion',
   wcagCriterionAll: 'All',
   settingAutoScan: 'Auto-scan on page load',
@@ -177,6 +183,9 @@ const popupRu: PopupUiStrings = {
   historyEmpty: 'История сканирований пуста.',
   copySelector: 'Скопировать селектор',
   copiedSelector: 'Скопировано!',
+  paginationPrev: '\u2190 Назад',
+  paginationNext: 'Вперёд \u2192',
+  paginationPage: (current, total) => `Стр. ${current} из ${total}`,
   wcagCriterionFilter: 'Критерий',
   wcagCriterionAll: 'Все',
   settingAutoScan: 'Автосканирование при загрузке',

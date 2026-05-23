@@ -46,6 +46,13 @@ class PopupUI {
   private currentResult: ScanResult | null = null;
   private exporter = new ExportUtil();
   private uiLocale: AppLocale = 'en';
+  private currentPage: number = 1;
+  private readonly pageSize: number = 20;
+
+  private paginationContainer!: HTMLElement;
+  private paginationPrev!: HTMLButtonElement;
+  private paginationNext!: HTMLButtonElement;
+  private paginationInfo!: HTMLElement;
 
   constructor() {
     this.bindElements();
@@ -85,6 +92,10 @@ class PopupUI {
     this.settingsCancel = document.getElementById('settings-cancel') as HTMLButtonElement;
     this.settingLocale = document.getElementById('setting-locale') as HTMLSelectElement;
     this.settingLocaleLabel = document.getElementById('setting-locale-label') as HTMLElement;
+    this.paginationContainer = document.getElementById('pagination-container') as HTMLElement;
+    this.paginationPrev = document.getElementById('pagination-prev') as HTMLButtonElement;
+    this.paginationNext = document.getElementById('pagination-next') as HTMLButtonElement;
+    this.paginationInfo = document.getElementById('pagination-info') as HTMLElement;
 
     this.filterButtons = document.querySelectorAll('.filter-btn') as NodeListOf<HTMLElement>;
     this.tabButtons = document.querySelectorAll('.tab-btn') as NodeListOf<HTMLElement>;
@@ -108,6 +119,7 @@ class PopupUI {
 
     this.wcagCriterionSelect.addEventListener('change', () => {
       this.activeCriterion = this.wcagCriterionSelect.value;
+      this.currentPage = 1;
       if (this.currentResult) this.renderIssuesList(this.currentResult.issues);
     });
 
@@ -116,6 +128,7 @@ class PopupUI {
         this.filterButtons.forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         this.activeFilter = btn.dataset['filter'] ?? 'all';
+        this.currentPage = 1;
         if (this.currentResult) this.renderIssuesList(this.currentResult.issues);
       });
     });
@@ -133,6 +146,23 @@ class PopupUI {
     this.settingsCancel.addEventListener('click', () => this.closeSettings());
     this.settingsOverlay.addEventListener('click', (e) => {
       if (e.target === this.settingsOverlay) this.closeSettings();
+    });
+
+    this.paginationPrev.addEventListener('click', () => {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+        if (this.currentResult) this.renderIssuesList(this.currentResult.issues);
+      }
+    });
+    this.paginationNext.addEventListener('click', () => {
+      if (this.currentResult) {
+        const groups = this.computeGroups(this.currentResult.issues);
+        const totalPages = Math.ceil(groups.length / this.pageSize) || 1;
+        if (this.currentPage < totalPages) {
+          this.currentPage++;
+          this.renderIssuesList(this.currentResult.issues);
+        }
+      }
     });
   }
 
@@ -437,9 +467,7 @@ class PopupUI {
     this.wcagCriterionSelect.value = 'all';
   }
 
-  private renderIssuesList(issues: AccessibilityIssue[]): void {
-    this.resultsContainer.innerHTML = '';
-
+  private computeGroups(issues: AccessibilityIssue[]): Array<{ selector: string; issues: AccessibilityIssue[] }> {
     let filtered = this.activeFilter === 'all'
       ? issues
       : issues.filter((i) => i.impact === this.activeFilter);
@@ -448,16 +476,6 @@ class PopupUI {
       filtered = filtered.filter((i) => i.wcagCriteria.includes(this.activeCriterion));
     }
 
-    if (filtered.length === 0) {
-      const ui = getPopupUi(this.uiLocale);
-      this.resultsContainer.innerHTML =
-        this.activeFilter === 'all'
-          ? `<p class="placeholder">${this.escapeHtml(ui.placeholderNoIssues)}</p>`
-          : `<p class="placeholder">${this.escapeHtml(formatNoFilteredIssuesPlaceholder(this.uiLocale, this.activeFilter))}</p>`;
-      return;
-    }
-
-    // Group by element selector
     const groups = new Map<string, AccessibilityIssue[]>();
     filtered.forEach((issue) => {
       const key = this.buildSelector(issue);
@@ -465,7 +483,31 @@ class PopupUI {
       groups.get(key)!.push(issue);
     });
 
-    groups.forEach((groupIssues, selector) => {
+    return Array.from(groups.entries()).map(([selector, groupIssues]) => ({ selector, issues: groupIssues }));
+  }
+
+  private renderIssuesList(issues: AccessibilityIssue[]): void {
+    this.resultsContainer.innerHTML = '';
+
+    const groups = this.computeGroups(issues);
+
+    if (groups.length === 0) {
+      const ui = getPopupUi(this.uiLocale);
+      this.resultsContainer.innerHTML =
+        this.activeFilter === 'all'
+          ? `<p class="placeholder">${this.escapeHtml(ui.placeholderNoIssues)}</p>`
+          : `<p class="placeholder">${this.escapeHtml(formatNoFilteredIssuesPlaceholder(this.uiLocale, this.activeFilter))}</p>`;
+      this.paginationContainer.style.display = 'none';
+      return;
+    }
+
+    const totalPages = Math.ceil(groups.length / this.pageSize);
+    if (this.currentPage > totalPages) this.currentPage = totalPages;
+
+    const start = (this.currentPage - 1) * this.pageSize;
+    const pageGroups = groups.slice(start, start + this.pageSize);
+
+    pageGroups.forEach(({ selector, issues: groupIssues }) => {
       if (groupIssues.length === 1) {
         this.resultsContainer.appendChild(this.buildIssueCard(groupIssues[0], selector));
       } else {
@@ -485,6 +527,16 @@ class PopupUI {
         this.resultsContainer.appendChild(group);
       }
     });
+
+    if (totalPages > 1) {
+      this.paginationContainer.style.display = 'flex';
+      const ui = getPopupUi(this.uiLocale);
+      this.paginationPrev.disabled = this.currentPage <= 1;
+      this.paginationNext.disabled = this.currentPage >= totalPages;
+      this.paginationInfo.textContent = ui.paginationPage(this.currentPage, totalPages);
+    } else {
+      this.paginationContainer.style.display = 'none';
+    }
   }
 
   private buildIssueCard(issue: AccessibilityIssue, selector: string): HTMLElement {
