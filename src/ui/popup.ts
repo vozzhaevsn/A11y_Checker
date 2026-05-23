@@ -13,13 +13,16 @@ class PopupUI {
   private scanBtn!: HTMLButtonElement;
   private clearBtn!: HTMLButtonElement;
   private settingsBtn!: HTMLButtonElement;
+  private themeBtn!: HTMLButtonElement;
   private resultsContainer!: HTMLElement;
+  private historyContainer!: HTMLElement;
   private summaryContainer!: HTMLElement;
   private exportActions!: HTMLElement;
   private exportJsonBtn!: HTMLButtonElement;
   private exportHtmlBtn!: HTMLButtonElement;
   private exportCsvBtn!: HTMLButtonElement;
   private wcagLevelSelect!: HTMLSelectElement;
+  private wcagCriterionSelect!: HTMLSelectElement;
   private footerLabel!: HTMLElement;
 
   private settingsOverlay!: HTMLElement;
@@ -27,13 +30,18 @@ class PopupUI {
   private settingImages!: HTMLInputElement;
   private settingSemantics!: HTMLInputElement;
   private settingKeyboard!: HTMLInputElement;
+  private settingAutoScan!: HTMLInputElement;
+  private settingTheme!: HTMLInputElement;
   private settingsSave!: HTMLButtonElement;
   private settingsCancel!: HTMLButtonElement;
   private settingLocale!: HTMLSelectElement;
   private settingLocaleLabel!: HTMLElement;
 
   private filterButtons!: NodeListOf<HTMLElement>;
+  private tabButtons!: NodeListOf<HTMLElement>;
   private activeFilter: string = 'all';
+  private activeCriterion: string = 'all';
+  private activeTab: string = 'issues';
 
   private currentResult: ScanResult | null = null;
   private exporter = new ExportUtil();
@@ -54,13 +62,16 @@ class PopupUI {
     this.scanBtn = document.getElementById('scan-btn') as HTMLButtonElement;
     this.clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
     this.settingsBtn = document.getElementById('settings-btn') as HTMLButtonElement;
+    this.themeBtn = document.getElementById('theme-btn') as HTMLButtonElement;
     this.resultsContainer = document.getElementById('results-container') as HTMLElement;
+    this.historyContainer = document.getElementById('history-container') as HTMLElement;
     this.summaryContainer = document.getElementById('summary-container') as HTMLElement;
     this.exportActions = document.getElementById('export-actions') as HTMLElement;
     this.exportJsonBtn = document.getElementById('export-json-btn') as HTMLButtonElement;
     this.exportHtmlBtn = document.getElementById('export-html-btn') as HTMLButtonElement;
     this.exportCsvBtn = document.getElementById('export-csv-btn') as HTMLButtonElement;
     this.wcagLevelSelect = document.getElementById('wcag-level') as HTMLSelectElement;
+    this.wcagCriterionSelect = document.getElementById('wcag-criterion-filter') as HTMLSelectElement;
     this.footerLabel = document.getElementById('footer-wcag-label') as HTMLElement;
 
     this.settingsOverlay = document.getElementById('settings-overlay') as HTMLElement;
@@ -68,18 +79,22 @@ class PopupUI {
     this.settingImages = document.getElementById('setting-images') as HTMLInputElement;
     this.settingSemantics = document.getElementById('setting-semantics') as HTMLInputElement;
     this.settingKeyboard = document.getElementById('setting-keyboard') as HTMLInputElement;
+    this.settingAutoScan = document.getElementById('setting-auto-scan') as HTMLInputElement;
+    this.settingTheme = document.getElementById('setting-theme') as HTMLInputElement;
     this.settingsSave = document.getElementById('settings-save') as HTMLButtonElement;
     this.settingsCancel = document.getElementById('settings-cancel') as HTMLButtonElement;
     this.settingLocale = document.getElementById('setting-locale') as HTMLSelectElement;
     this.settingLocaleLabel = document.getElementById('setting-locale-label') as HTMLElement;
 
     this.filterButtons = document.querySelectorAll('.filter-btn') as NodeListOf<HTMLElement>;
+    this.tabButtons = document.querySelectorAll('.tab-btn') as NodeListOf<HTMLElement>;
   }
 
   private initializeEventListeners(): void {
     this.scanBtn.addEventListener('click', () => void this.runScan());
     this.clearBtn.addEventListener('click', () => void this.clearResults());
     this.settingsBtn.addEventListener('click', () => this.openSettings());
+    this.themeBtn.addEventListener('click', () => this.toggleTheme());
     this.exportJsonBtn.addEventListener('click', () => this.exportResults('json'));
     this.exportHtmlBtn.addEventListener('click', () => this.exportResults('html'));
     this.exportCsvBtn.addEventListener('click', () => this.exportResults('csv'));
@@ -91,14 +106,26 @@ class PopupUI {
       void this.updateRemoteSettings({ wcagLevel: level });
     });
 
+    this.wcagCriterionSelect.addEventListener('change', () => {
+      this.activeCriterion = this.wcagCriterionSelect.value;
+      if (this.currentResult) this.renderIssuesList(this.currentResult.issues);
+    });
+
     this.filterButtons.forEach((btn) => {
       btn.addEventListener('click', () => {
         this.filterButtons.forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         this.activeFilter = btn.dataset['filter'] ?? 'all';
-        if (this.currentResult) {
-          this.renderIssuesList(this.currentResult.issues);
-        }
+        if (this.currentResult) this.renderIssuesList(this.currentResult.issues);
+      });
+    });
+
+    this.tabButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.tabButtons.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.activeTab = btn.dataset['tab'] ?? 'issues';
+        this.switchTab();
       });
     });
 
@@ -107,6 +134,91 @@ class PopupUI {
     this.settingsOverlay.addEventListener('click', (e) => {
       if (e.target === this.settingsOverlay) this.closeSettings();
     });
+  }
+
+  /* ---------- theme ---------- */
+
+  private applyTheme(theme: 'light' | 'dark'): void {
+    document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : '');
+  }
+
+  private toggleTheme(): void {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next: 'light' | 'dark' = current === 'dark' ? 'light' : 'dark';
+    this.applyTheme(next);
+    this.settingTheme.checked = next === 'dark';
+    void this.updateRemoteSettings({ theme: next });
+  }
+
+  /* ---------- tabs ---------- */
+
+  private switchTab(): void {
+    if (this.activeTab === 'history') {
+      this.resultsContainer.style.display = 'none';
+      this.summaryContainer.style.display = 'none';
+      this.exportActions.style.display = 'none';
+      this.historyContainer.style.display = 'block';
+      void this.renderHistory();
+    } else {
+      this.historyContainer.style.display = 'none';
+      this.resultsContainer.style.display = 'block';
+      if (this.currentResult) {
+        this.summaryContainer.style.display = 'grid';
+        this.exportActions.style.display = 'flex';
+      }
+    }
+  }
+
+  private async renderHistory(): Promise<void> {
+    try {
+      const response = await chrome.runtime.sendMessage({ action: 'getAllScans' });
+      if (!response?.success || !Array.isArray(response.results)) {
+        this.historyContainer.innerHTML = `<p class="placeholder">${this.escapeHtml(getPopupUi(this.uiLocale).historyEmpty)}</p>`;
+        return;
+      }
+      const results: ScanResult[] = (response.results as ScanResult[]).slice(0, 10);
+      if (results.length === 0) {
+        this.historyContainer.innerHTML = `<p class="placeholder">${this.escapeHtml(getPopupUi(this.uiLocale).historyEmpty)}</p>`;
+        return;
+      }
+      this.historyContainer.innerHTML = '';
+      results.forEach((r) => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        const ago = this.timeAgo(r.timestamp);
+        const badgeClass = r.summary.critical > 0 ? '' : 'zero';
+        const badgeText = r.summary.critical > 0
+          ? `${r.summary.critical} critical`
+          : `${r.summary.total} issues`;
+        item.innerHTML = `
+          <span class="history-url" title="${this.escapeHtml(r.url)}">${this.escapeHtml(r.url)}</span>
+          <span class="history-meta">${this.escapeHtml(ago)}</span>
+          <span class="history-badge ${badgeClass}">${this.escapeHtml(badgeText)}</span>
+        `;
+        item.addEventListener('click', () => {
+          this.currentResult = r;
+          this.tabButtons.forEach((b) => b.classList.remove('active'));
+          (document.getElementById('tab-issues') as HTMLElement).classList.add('active');
+          this.activeTab = 'issues';
+          this.switchTab();
+          this.displayResults(r);
+        });
+        this.historyContainer.appendChild(item);
+      });
+    } catch {
+      this.historyContainer.innerHTML = `<p class="placeholder">${this.escapeHtml(getPopupUi(this.uiLocale).historyEmpty)}</p>`;
+    }
+  }
+
+  private timeAgo(timestamp: number): string {
+    const diff = Date.now() - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
   }
 
   /* ---------- settings ---------- */
@@ -123,6 +235,9 @@ class PopupUI {
         this.settingImages.checked = s.includeImages;
         this.settingSemantics.checked = s.includeSemantics;
         this.settingKeyboard.checked = s.includeKeyboard;
+        this.settingAutoScan.checked = s.autoScanOnLoad;
+        this.settingTheme.checked = s.theme === 'dark';
+        this.applyTheme(s.theme ?? 'light');
         this.applyPopupUi();
       }
     } catch {
@@ -153,6 +268,9 @@ class PopupUI {
       else if (f === 'minor') btn.textContent = ui.filterMinor;
     });
 
+    (document.getElementById('tab-issues') as HTMLElement).textContent = ui.tabIssues;
+    (document.getElementById('tab-history') as HTMLElement).textContent = ui.tabHistory;
+
     const summaryLabels = ['summaryTotal', 'summaryCritical', 'summarySerious', 'summaryModerate', 'summaryMinor'] as const;
     document.querySelectorAll('#summary-container .summary-label').forEach((el, i) => {
       const key = summaryLabels[i];
@@ -167,6 +285,8 @@ class PopupUI {
 
     (document.getElementById('settings-title') as HTMLElement).textContent = ui.settingsTitle;
     this.settingLocaleLabel.textContent = ui.settingLocaleLabel;
+    (document.getElementById('setting-theme-label') as HTMLElement).textContent = ui.settingTheme;
+    (document.getElementById('setting-auto-scan-label') as HTMLElement).textContent = ui.settingAutoScan;
     (document.querySelector('label[for="setting-contrast"]') as HTMLElement).textContent = ui.settingContrast;
     (document.querySelector('label[for="setting-images"]') as HTMLElement).textContent = ui.settingImages;
     (document.querySelector('label[for="setting-semantics"]') as HTMLElement).textContent = ui.settingSemantics;
@@ -186,6 +306,8 @@ class PopupUI {
   private async saveSettings(): Promise<void> {
     const loc = this.settingLocale.value;
     this.uiLocale = isAppLocale(loc) ? loc : 'en';
+    const theme: 'light' | 'dark' = this.settingTheme.checked ? 'dark' : 'light';
+    this.applyTheme(theme);
     const partial: Partial<Settings> = {
       wcagLevel: this.wcagLevelSelect.value as 'A' | 'AA' | 'AAA',
       locale: this.uiLocale,
@@ -193,12 +315,12 @@ class PopupUI {
       includeImages: this.settingImages.checked,
       includeSemantics: this.settingSemantics.checked,
       includeKeyboard: this.settingKeyboard.checked,
+      autoScanOnLoad: this.settingAutoScan.checked,
+      theme,
     };
     await this.updateRemoteSettings(partial);
     this.applyPopupUi();
-    if (this.currentResult) {
-      this.renderIssuesList(this.currentResult.issues);
-    }
+    if (this.currentResult) this.renderIssuesList(this.currentResult.issues);
     this.closeSettings();
   }
 
@@ -295,16 +417,36 @@ class PopupUI {
     (document.getElementById('moderate-count') as HTMLElement).textContent = String(result.summary.moderate);
     (document.getElementById('minor-count') as HTMLElement).textContent = String(result.summary.minor);
 
+    this.populateCriterionFilter(result.issues);
     this.renderIssuesList(result.issues);
+  }
+
+  private populateCriterionFilter(issues: AccessibilityIssue[]): void {
+    const ui = getPopupUi(this.uiLocale);
+    const criteria = new Set<string>();
+    issues.forEach((i) => i.wcagCriteria.forEach((c) => criteria.add(c)));
+
+    this.wcagCriterionSelect.innerHTML = `<option value="all">${this.escapeHtml(ui.wcagCriterionAll)}</option>`;
+    Array.from(criteria).sort().forEach((c) => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = c;
+      this.wcagCriterionSelect.appendChild(opt);
+    });
+    this.activeCriterion = 'all';
+    this.wcagCriterionSelect.value = 'all';
   }
 
   private renderIssuesList(issues: AccessibilityIssue[]): void {
     this.resultsContainer.innerHTML = '';
 
-    const filtered =
-      this.activeFilter === 'all'
-        ? issues
-        : issues.filter((i) => i.impact === this.activeFilter);
+    let filtered = this.activeFilter === 'all'
+      ? issues
+      : issues.filter((i) => i.impact === this.activeFilter);
+
+    if (this.activeCriterion !== 'all') {
+      filtered = filtered.filter((i) => i.wcagCriteria.includes(this.activeCriterion));
+    }
 
     if (filtered.length === 0) {
       const ui = getPopupUi(this.uiLocale);
@@ -315,40 +457,85 @@ class PopupUI {
       return;
     }
 
+    // Group by element selector
+    const groups = new Map<string, AccessibilityIssue[]>();
     filtered.forEach((issue) => {
-      const item = document.createElement('div');
-      item.className = `issue-item ${issue.impact}`;
-
-      const selector = this.buildSelector(issue);
-
-      const ui = getPopupUi(this.uiLocale);
-      const impactLabel = getImpactLabel(this.uiLocale, issue.impact as ImpactKey);
-      item.innerHTML = `
-        <div class="issue-header">
-          <span class="issue-description">${this.escapeHtml(issue.description)}</span>
-          <span class="issue-impact ${issue.impact}">${this.escapeHtml(impactLabel)}</span>
-        </div>
-        <div class="issue-element">&lt;${this.escapeHtml(issue.element.tagName)}${
-          issue.element.id ? ` id="${this.escapeHtml(issue.element.id)}"` : ''
-        }${issue.element.className ? ` class="${this.escapeHtml(issue.element.className)}"` : ''}&gt;</div>
-        <div class="issue-wcag">${this.escapeHtml(ui.issueWcagPrefix)} ${issue.wcagCriteria.join(', ')}</div>
-        <div class="issue-details">
-          <div class="help-text">${this.escapeHtml(issue.help)}</div>
-          ${
-            issue.fixSuggestions.length
-              ? `<ul class="fix-suggestions">${issue.fixSuggestions.map((s) => `<li>${this.escapeHtml(s)}</li>`).join('')}</ul>`
-              : ''
-          }
-        </div>
-      `;
-
-      item.addEventListener('click', () => {
-        item.classList.toggle('expanded');
-        void this.navigateToElement(selector);
-      });
-
-      this.resultsContainer.appendChild(item);
+      const key = this.buildSelector(issue);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(issue);
     });
+
+    groups.forEach((groupIssues, selector) => {
+      if (groupIssues.length === 1) {
+        this.resultsContainer.appendChild(this.buildIssueCard(groupIssues[0], selector));
+      } else {
+        const group = document.createElement('div');
+        group.className = 'element-group';
+
+        const header = document.createElement('div');
+        header.className = 'element-group-header';
+        header.innerHTML = `<span>${this.escapeHtml(selector)}</span><span>${groupIssues.length} issues</span>`;
+        group.appendChild(header);
+
+        const body = document.createElement('div');
+        body.className = 'element-group-body';
+        groupIssues.forEach((issue) => body.appendChild(this.buildIssueCard(issue, selector)));
+        group.appendChild(body);
+
+        this.resultsContainer.appendChild(group);
+      }
+    });
+  }
+
+  private buildIssueCard(issue: AccessibilityIssue, selector: string): HTMLElement {
+    const item = document.createElement('div');
+    item.className = `issue-item ${issue.impact}`;
+
+    const ui = getPopupUi(this.uiLocale);
+    const impactLabel = getImpactLabel(this.uiLocale, issue.impact as ImpactKey);
+
+    const wcagChips = issue.wcagCriteria.map((c) =>
+      `<span class="wcag-chip" title="${this.escapeHtml(c)}">${this.escapeHtml(c)}</span>`
+    ).join('');
+
+    item.innerHTML = `
+      <div class="issue-header">
+        <span class="issue-description">${this.escapeHtml(issue.description)}</span>
+        <span class="issue-impact ${issue.impact}">${this.escapeHtml(impactLabel)}</span>
+      </div>
+      <div class="issue-element">&lt;${this.escapeHtml(issue.element.tagName)}${
+        issue.element.id ? ` id="${this.escapeHtml(issue.element.id)}"` : ''
+      }${issue.element.className ? ` class="${this.escapeHtml(issue.element.className)}"` : ''}&gt;</div>
+      <div class="issue-wcag">${this.escapeHtml(ui.issueWcagPrefix)} ${wcagChips}</div>
+      <div class="issue-actions">
+        <button class="btn-copy-selector" data-selector="${this.escapeHtml(selector)}">${this.escapeHtml(ui.copySelector)}</button>
+      </div>
+      <div class="issue-details">
+        <div class="help-text">${this.escapeHtml(issue.help)}</div>
+        ${
+          issue.fixSuggestions.length
+            ? `<ul class="fix-suggestions">${issue.fixSuggestions.map((s) => `<li>${this.escapeHtml(s)}</li>`).join('')}</ul>`
+            : ''
+        }
+      </div>
+    `;
+
+    item.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).classList.contains('btn-copy-selector')) return;
+      item.classList.toggle('expanded');
+      void this.navigateToElement(selector);
+    });
+
+    const copyBtn = item.querySelector('.btn-copy-selector') as HTMLButtonElement;
+    copyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      void navigator.clipboard.writeText(selector).then(() => {
+        copyBtn.textContent = ui.copiedSelector;
+        setTimeout(() => { copyBtn.textContent = ui.copySelector; }, 1500);
+      });
+    });
+
+    return item;
   }
 
   private buildSelector(issue: AccessibilityIssue): string {
@@ -400,7 +587,6 @@ class PopupUI {
 
     const blob = new Blob([content], { type: mime });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement('a');
     a.href = url;
     a.download = `a11y-report-${new Date(this.currentResult.timestamp).toISOString().slice(0, 10)}.${extension}`;

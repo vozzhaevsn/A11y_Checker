@@ -39,6 +39,15 @@ export interface PopupUiStrings {
   scanning: string;
   errorPrefix: string;
   issueWcagPrefix: string;
+  tabIssues: string;
+  tabHistory: string;
+  historyEmpty: string;
+  copySelector: string;
+  copiedSelector: string;
+  wcagCriterionFilter: string;
+  wcagCriterionAll: string;
+  settingAutoScan: string;
+  settingTheme: string;
 }
 
 export interface ExportReportStrings {
@@ -115,6 +124,15 @@ const popupEn: PopupUiStrings = {
   scanning: 'Scanning...',
   errorPrefix: 'Error:',
   issueWcagPrefix: 'WCAG',
+  tabIssues: 'Issues',
+  tabHistory: 'History',
+  historyEmpty: 'No scan history yet.',
+  copySelector: 'Copy selector',
+  copiedSelector: 'Copied!',
+  wcagCriterionFilter: 'Criterion',
+  wcagCriterionAll: 'All',
+  settingAutoScan: 'Auto-scan on page load',
+  settingTheme: 'Dark theme',
 };
 
 const popupRu: PopupUiStrings = {
@@ -154,6 +172,15 @@ const popupRu: PopupUiStrings = {
   scanning: 'Сканирование...',
   errorPrefix: 'Ошибка:',
   issueWcagPrefix: 'WCAG',
+  tabIssues: 'Проблемы',
+  tabHistory: 'История',
+  historyEmpty: 'История сканирований пуста.',
+  copySelector: 'Скопировать селектор',
+  copiedSelector: 'Скопировано!',
+  wcagCriterionFilter: 'Критерий',
+  wcagCriterionAll: 'Все',
+  settingAutoScan: 'Автосканирование при загрузке',
+  settingTheme: 'Тёмная тема',
 };
 
 const exportEn: ExportReportStrings = {

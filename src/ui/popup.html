@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,6 +17,7 @@
       <button id="scan-btn" class="btn btn-primary">Scan Page</button>
       <button id="clear-btn" class="btn btn-secondary">Clear</button>
       <button id="settings-btn" class="btn btn-secondary">Settings</button>
+      <button id="theme-btn" class="btn btn-secondary" title="Toggle theme" aria-label="Toggle theme">🌙</button>
     </div>
 
     <div class="wcag-selector">
@@ -25,6 +26,10 @@
         <option value="A">A</option>
         <option value="AA" selected>AA</option>
         <option value="AAA">AAA</option>
+      </select>
+      <label for="wcag-criterion-filter" style="margin-left:6px">Criterion:</label>
+      <select id="wcag-criterion-filter">
+        <option value="all">All</option>
       </select>
       <div class="filter-bar">
         <button class="filter-btn active" data-filter="all">All</button>
@@ -58,8 +63,17 @@
       </div>
     </div>
 
+    <div class="tabs">
+      <button id="tab-issues" class="tab-btn active" data-tab="issues">Issues</button>
+      <button id="tab-history" class="tab-btn" data-tab="history">History</button>
+    </div>
+
     <div id="results-container" class="results-container">
       <p class="placeholder">Click "Scan Page" to start accessibility analysis</p>
+    </div>
+
+    <div id="history-container" class="history-container" style="display: none;">
+      <p class="placeholder">No scan history yet.</p>
     </div>
 
     <div id="export-actions" class="export-actions" style="display: none;">
@@ -84,6 +98,16 @@
           <option value="en">English</option>
           <option value="ru">Русский</option>
         </select>
+      </div>
+
+      <div class="modal-field">
+        <label for="setting-theme" id="setting-theme-label">Dark theme</label>
+        <input type="checkbox" id="setting-theme">
+      </div>
+
+      <div class="modal-field">
+        <label for="setting-auto-scan" id="setting-auto-scan-label">Auto-scan on page load</label>
+        <input type="checkbox" id="setting-auto-scan">
       </div>
 
       <div class="modal-field">
